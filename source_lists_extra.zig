@@ -332,6 +332,8 @@ pub const qtgui_common_sources: []const []const u8 = &.{
     "math3d/qvectornd.cpp",
     // painting (excluding SIMD-specific files)
     "painting/qbackingstore.cpp",
+    "painting/qbackingstoredefaultcompositor.cpp",
+    "painting/qbackingstorerhisupport.cpp",
     "painting/qbezier.cpp",
     "painting/qblendfunctions.cpp",
     "painting/qblittable.cpp",
@@ -860,4 +862,5 @@ pub const qwindows_plugin_sources: []const []const u8 = &.{
     "uiautomation/qwindowsuiautomation.cpp",
     "uiautomation/qwindowsuiavalueprovider.cpp",
     "uiautomation/qwindowsuiawindowprovider.cpp",
+    "qwindowsopengltester.cpp",
 };

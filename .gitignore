@@ -2,9 +2,15 @@
 zig-out/
 .zig-cache/
 
-# Qt source (junctions/symlinks to actual Qt source and build include)
-qt-sources/*/qtbase/
-qt-sources/*/include/
+# Qt resource (junctions to C:/Qt/6.8.3/mingw_64 and Src/qtbase)
+qt-resource/include/
+qt-resource/lib/
+qt-resource/mkspecs/
+qt-resource/plugins/
+qt-resource/qtbase/
+
+# Legacy qt-sources (can be removed)
+qt-sources/
 
 # OS files
 Thumbs.db

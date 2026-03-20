@@ -58,12 +58,12 @@ pub fn build(b: *std.Build) void {
     });
 
     zlib_mod.addCSourceFiles(.{
-        .root = b.path("qt-sources/6.8.3/qtbase/src/3rdparty/zlib"),
+        .root = b.path("qt-resource/qtbase/src/3rdparty/zlib"),
         .files = sources.zlib_sources,
         .flags = common_c_flags,
     });
 
-    zlib_mod.addIncludePath(b.path("qt-sources/6.8.3/qtbase/src/3rdparty/zlib/src"));
+    zlib_mod.addIncludePath(b.path("qt-resource/qtbase/src/3rdparty/zlib/src"));
     // Qt's bundled zlib includes qconfig.h and qglobal.h
     addQtCoreIncludes(zlib_mod, b);
 
@@ -85,7 +85,7 @@ pub fn build(b: *std.Build) void {
     });
 
     pcre2_mod.addCSourceFiles(.{
-        .root = b.path("qt-sources/6.8.3/qtbase/src/3rdparty/pcre2"),
+        .root = b.path("qt-resource/qtbase/src/3rdparty/pcre2"),
         .files = sources.pcre2_sources,
         .flags = common_c_flags ++ &[_][]const u8{
             "-DHAVE_CONFIG_H",
@@ -95,7 +95,7 @@ pub fn build(b: *std.Build) void {
         },
     });
 
-    pcre2_mod.addIncludePath(b.path("qt-sources/6.8.3/qtbase/src/3rdparty/pcre2/src"));
+    pcre2_mod.addIncludePath(b.path("qt-resource/qtbase/src/3rdparty/pcre2/src"));
 
     const pcre2_lib = b.addLibrary(.{
         .name = "qtPcre2",
@@ -116,7 +116,7 @@ pub fn build(b: *std.Build) void {
     dblconv_mod.linkSystemLibrary("c++", .{});
 
     dblconv_mod.addCSourceFiles(.{
-        .root = b.path("qt-sources/6.8.3/qtbase/src/3rdparty/double-conversion"),
+        .root = b.path("qt-resource/qtbase/src/3rdparty/double-conversion"),
         .files = sources.double_conversion_sources,
         .flags = &.{
             "-std=c++17",
@@ -125,8 +125,8 @@ pub fn build(b: *std.Build) void {
         },
     });
 
-    dblconv_mod.addIncludePath(b.path("qt-sources/6.8.3/qtbase/src/3rdparty/double-conversion"));
-    dblconv_mod.addIncludePath(b.path("qt-sources/6.8.3/qtbase/src/3rdparty/double-conversion/double-conversion"));
+    dblconv_mod.addIncludePath(b.path("qt-resource/qtbase/src/3rdparty/double-conversion"));
+    dblconv_mod.addIncludePath(b.path("qt-resource/qtbase/src/3rdparty/double-conversion/double-conversion"));
 
     const dblconv_lib = b.addLibrary(.{
         .name = "qtDoubleConversion",
@@ -190,21 +190,21 @@ pub fn build(b: *std.Build) void {
 
     // Bootstrap core sources
     bootstrap_mod.addCSourceFiles(.{
-        .root = b.path("qt-sources/6.8.3/qtbase/src/corelib"),
+        .root = b.path("qt-resource/qtbase/src/corelib"),
         .files = sources.bootstrap_core_sources,
         .flags = bootstrap_flags,
     });
 
     // Bootstrap Windows-specific sources
     bootstrap_mod.addCSourceFiles(.{
-        .root = b.path("qt-sources/6.8.3/qtbase/src/corelib"),
+        .root = b.path("qt-resource/qtbase/src/corelib"),
         .files = sources.bootstrap_win_sources,
         .flags = bootstrap_flags,
     });
 
     // Bootstrap also compiles embedded PCRE2 sources
     bootstrap_mod.addCSourceFiles(.{
-        .root = b.path("qt-sources/6.8.3/qtbase/src/3rdparty/pcre2"),
+        .root = b.path("qt-resource/qtbase/src/3rdparty/pcre2"),
         .files = sources.pcre2_sources,
         .flags = common_c_flags ++ &[_][]const u8{
             "-DHAVE_CONFIG_H",
@@ -253,21 +253,21 @@ pub fn build(b: *std.Build) void {
 
     // Full QtCore sources (common/cross-platform)
     qtcore_mod.addCSourceFiles(.{
-        .root = b.path("qt-sources/6.8.3/qtbase/src/corelib"),
+        .root = b.path("qt-resource/qtbase/src/corelib"),
         .files = sources.qtcore_common_sources,
         .flags = qt_core_cxx_flags,
     });
 
     // QtCore Windows-specific sources
     qtcore_mod.addCSourceFiles(.{
-        .root = b.path("qt-sources/6.8.3/qtbase/src/corelib"),
+        .root = b.path("qt-resource/qtbase/src/corelib"),
         .files = sources.qtcore_win_sources,
         .flags = qt_core_cxx_flags,
     });
 
     // double-conversion (embedded in QtCore)
     qtcore_mod.addCSourceFiles(.{
-        .root = b.path("qt-sources/6.8.3/qtbase/src/3rdparty/double-conversion"),
+        .root = b.path("qt-resource/qtbase/src/3rdparty/double-conversion"),
         .files = sources.double_conversion_sources,
         .flags = &.{
             "-std=c++17",
@@ -278,7 +278,7 @@ pub fn build(b: *std.Build) void {
 
     // Embedded 3rd party hash algorithms
     qtcore_mod.addCSourceFiles(.{
-        .root = b.path("qt-sources/6.8.3/qtbase/src/3rdparty"),
+        .root = b.path("qt-resource/qtbase/src/3rdparty"),
         .files = sources.hash_3rdparty_sources,
         .flags = common_c_flags ++ &[_][]const u8{
             "-Wno-implicit-function-declaration",
@@ -336,9 +336,9 @@ pub fn build(b: *std.Build) void {
     moc_mod.linkSystemLibrary("ws2_32", .{});
 
     addQtCoreIncludes(moc_mod, b);
-    moc_mod.addIncludePath(b.path("qt-sources/6.8.3/qtbase/src/tools/moc"));
-    moc_mod.addIncludePath(b.path("qt-sources/6.8.3/qtbase/src/tools/shared"));
-    moc_mod.addIncludePath(b.path("qt-sources/6.8.3/qtbase/src/3rdparty/tinycbor/src"));
+    moc_mod.addIncludePath(b.path("qt-resource/qtbase/src/tools/moc"));
+    moc_mod.addIncludePath(b.path("qt-resource/qtbase/src/tools/shared"));
+    moc_mod.addIncludePath(b.path("qt-resource/qtbase/src/3rdparty/tinycbor/src"));
 
     const moc_flags: []const []const u8 = &.{
         "-std=c++17",
@@ -363,7 +363,7 @@ pub fn build(b: *std.Build) void {
 
     // Moc sources (parser.cpp patched for Clang compatibility)
     moc_mod.addCSourceFiles(.{
-        .root = b.path("qt-sources/6.8.3/qtbase/src/tools/moc"),
+        .root = b.path("qt-resource/qtbase/src/tools/moc"),
         .files = &.{
             "collectjson.cpp",
             "generator.cpp",
@@ -412,7 +412,7 @@ pub fn build(b: *std.Build) void {
     rcc_mod.linkSystemLibrary("ws2_32", .{});
 
     addQtCoreIncludes(rcc_mod, b);
-    rcc_mod.addIncludePath(b.path("qt-sources/6.8.3/qtbase/src/tools/rcc"));
+    rcc_mod.addIncludePath(b.path("qt-resource/qtbase/src/tools/rcc"));
 
     const rcc_flags: []const []const u8 = &.{
         "-std=c++17",
@@ -433,7 +433,7 @@ pub fn build(b: *std.Build) void {
     };
 
     rcc_mod.addCSourceFiles(.{
-        .root = b.path("qt-sources/6.8.3/qtbase/src/tools/rcc"),
+        .root = b.path("qt-resource/qtbase/src/tools/rcc"),
         .files = sources.rcc_tool_sources,
         .flags = rcc_flags,
     });
@@ -455,12 +455,12 @@ pub fn build(b: *std.Build) void {
     const harfbuzz_mod = b.createModule(.{ .target = target, .optimize = optimize, .link_libc = true });
     harfbuzz_mod.linkSystemLibrary("c++", .{});
     harfbuzz_mod.addCSourceFiles(.{
-        .root = b.path("qt-sources/6.8.3/qtbase/src/3rdparty/harfbuzz-ng"),
+        .root = b.path("qt-resource/qtbase/src/3rdparty/harfbuzz-ng"),
         .files = extra.harfbuzz_sources,
         .flags = &.{ "-std=c++17", "-w", "-DHAVE_ATEXIT", "-DHAVE_CONFIG_H", "-DHB_EXTERN=", "-DHB_NDEBUG", "-DHB_NO_UNICODE_FUNCS", "-DQT_NO_VERSION_TAGGING", "-DHAVE_OT", "-DHAVE_FALLBACK", "-DHB_NO_WIN1256", "-fvisibility=hidden" },
     });
-    harfbuzz_mod.addIncludePath(b.path("qt-sources/6.8.3/qtbase/src/3rdparty/harfbuzz-ng/src"));
-    harfbuzz_mod.addIncludePath(b.path("qt-sources/6.8.3/qtbase/src/3rdparty/harfbuzz-ng/include/harfbuzz"));
+    harfbuzz_mod.addIncludePath(b.path("qt-resource/qtbase/src/3rdparty/harfbuzz-ng/src"));
+    harfbuzz_mod.addIncludePath(b.path("qt-resource/qtbase/src/3rdparty/harfbuzz-ng/include/harfbuzz"));
     addQtCoreIncludes(harfbuzz_mod, b);
     const harfbuzz_lib = b.addLibrary(.{ .name = "qtHarfbuzz", .linkage = .static, .root_module = harfbuzz_mod });
     b.installArtifact(harfbuzz_lib);
@@ -471,13 +471,13 @@ pub fn build(b: *std.Build) void {
 
     const freetype_mod = b.createModule(.{ .target = target, .optimize = optimize, .link_libc = true });
     freetype_mod.addCSourceFiles(.{
-        .root = b.path("qt-sources/6.8.3/qtbase/src/3rdparty/freetype"),
+        .root = b.path("qt-resource/qtbase/src/3rdparty/freetype"),
         .files = extra.freetype_sources,
         .flags = common_c_flags ++ &[_][]const u8{ "-DFT2_BUILD_LIBRARY", "-DFT_CONFIG_OPTION_SYSTEM_ZLIB", "-DTT_CONFIG_OPTION_SUBPIXEL_HINTING", "-DFT_CONFIG_OPTION_USE_PNG", "-fvisibility=hidden" },
     });
-    freetype_mod.addIncludePath(b.path("qt-sources/6.8.3/qtbase/src/3rdparty/freetype/include"));
-    freetype_mod.addIncludePath(b.path("qt-sources/6.8.3/qtbase/src/3rdparty/zlib/src"));
-    freetype_mod.addIncludePath(b.path("qt-sources/6.8.3/qtbase/src/3rdparty/libpng"));
+    freetype_mod.addIncludePath(b.path("qt-resource/qtbase/src/3rdparty/freetype/include"));
+    freetype_mod.addIncludePath(b.path("qt-resource/qtbase/src/3rdparty/zlib/src"));
+    freetype_mod.addIncludePath(b.path("qt-resource/qtbase/src/3rdparty/libpng"));
     addQtCoreIncludes(freetype_mod, b);
     const freetype_lib = b.addLibrary(.{ .name = "qtFreetype", .linkage = .static, .root_module = freetype_mod });
     b.installArtifact(freetype_lib);
@@ -488,12 +488,12 @@ pub fn build(b: *std.Build) void {
 
     const libpng_mod = b.createModule(.{ .target = target, .optimize = optimize, .link_libc = true });
     libpng_mod.addCSourceFiles(.{
-        .root = b.path("qt-sources/6.8.3/qtbase/src/3rdparty/libpng"),
+        .root = b.path("qt-resource/qtbase/src/3rdparty/libpng"),
         .files = extra.libpng_sources,
         .flags = common_c_flags ++ &[_][]const u8{ "-DPNG_ARM_NEON_OPT=0", "-DPNG_POWERPC_VSX_OPT=0", "-DPNG_IMPEXP=", "-fvisibility=hidden" },
     });
-    libpng_mod.addIncludePath(b.path("qt-sources/6.8.3/qtbase/src/3rdparty/libpng"));
-    libpng_mod.addIncludePath(b.path("qt-sources/6.8.3/qtbase/src/3rdparty/zlib/src"));
+    libpng_mod.addIncludePath(b.path("qt-resource/qtbase/src/3rdparty/libpng"));
+    libpng_mod.addIncludePath(b.path("qt-resource/qtbase/src/3rdparty/zlib/src"));
     addQtCoreIncludes(libpng_mod, b);
     const libpng_lib = b.addLibrary(.{ .name = "qtLibpng", .linkage = .static, .root_module = libpng_mod });
     b.installArtifact(libpng_lib);
@@ -504,11 +504,11 @@ pub fn build(b: *std.Build) void {
 
     const libjpeg_mod = b.createModule(.{ .target = target, .optimize = optimize, .link_libc = true });
     libjpeg_mod.addCSourceFiles(.{
-        .root = b.path("qt-sources/6.8.3/qtbase/src/3rdparty/libjpeg"),
+        .root = b.path("qt-resource/qtbase/src/3rdparty/libjpeg"),
         .files = extra.libjpeg_sources,
         .flags = common_c_flags ++ &[_][]const u8{ "-fvisibility=hidden" },
     });
-    libjpeg_mod.addIncludePath(b.path("qt-sources/6.8.3/qtbase/src/3rdparty/libjpeg/src"));
+    libjpeg_mod.addIncludePath(b.path("qt-resource/qtbase/src/3rdparty/libjpeg/src"));
     const libjpeg_lib = b.addLibrary(.{ .name = "qtLibjpeg", .linkage = .static, .root_module = libjpeg_mod });
     b.installArtifact(libjpeg_lib);
 
@@ -550,20 +550,22 @@ pub fn build(b: *std.Build) void {
     qtgui_mod.addIncludePath(b.path("generated/moc_gui/include"));
 
     // QtGui common sources
-    qtgui_mod.addCSourceFiles(.{ .root = b.path("qt-sources/6.8.3/qtbase/src/gui"), .files = extra.qtgui_common_sources, .flags = qt_gui_cxx_flags });
+    qtgui_mod.addCSourceFiles(.{ .root = b.path("qt-resource/qtbase/src/gui"), .files = extra.qtgui_common_sources, .flags = qt_gui_cxx_flags });
     // QtGui C sources
-    qtgui_mod.addCSourceFiles(.{ .root = b.path("qt-sources/6.8.3/qtbase/src/gui"), .files = extra.qtgui_c_sources, .flags = common_c_flags });
+    qtgui_mod.addCSourceFiles(.{ .root = b.path("qt-resource/qtbase/src/gui"), .files = extra.qtgui_c_sources, .flags = common_c_flags });
     // QtGui Windows sources
-    qtgui_mod.addCSourceFiles(.{ .root = b.path("qt-sources/6.8.3/qtbase/src/gui"), .files = extra.qtgui_win_sources, .flags = qt_gui_cxx_flags });
+    qtgui_mod.addCSourceFiles(.{ .root = b.path("qt-resource/qtbase/src/gui"), .files = extra.qtgui_win_sources, .flags = qt_gui_cxx_flags });
+    // QtGui FreeType text engine sources
+    qtgui_mod.addCSourceFiles(.{ .root = b.path("qt-resource/qtbase/src/gui"), .files = extra.qtgui_freetype_sources, .flags = qt_gui_cxx_flags });
     // D3D12 Memory Allocator
-    qtgui_mod.addCSourceFiles(.{ .root = b.path("qt-sources/6.8.3/qtbase/src/3rdparty"), .files = &.{"D3D12MemoryAllocator/D3D12MemAlloc.cpp"}, .flags = qt_gui_cxx_flags });
+    qtgui_mod.addCSourceFiles(.{ .root = b.path("qt-resource/qtbase/src/3rdparty"), .files = &.{"D3D12MemoryAllocator/D3D12MemAlloc.cpp"}, .flags = qt_gui_cxx_flags });
     // md4c markdown parser
-    qtgui_mod.addCSourceFiles(.{ .root = b.path("qt-sources/6.8.3/qtbase/src/3rdparty/md4c"), .files = &.{"md4c.c"}, .flags = common_c_flags ++ &[_][]const u8{"-DMD4C_USE_UTF8"} });
+    qtgui_mod.addCSourceFiles(.{ .root = b.path("qt-resource/qtbase/src/3rdparty/md4c"), .files = &.{"md4c.c"}, .flags = common_c_flags ++ &[_][]const u8{"-DMD4C_USE_UTF8"} });
     // SIMD sources
-    qtgui_mod.addCSourceFiles(.{ .root = b.path("qt-sources/6.8.3/qtbase/src/gui"), .files = extra.qtgui_sse2_sources, .flags = qt_gui_cxx_flags ++ &[_][]const u8{"-msse2"} });
-    qtgui_mod.addCSourceFiles(.{ .root = b.path("qt-sources/6.8.3/qtbase/src/gui"), .files = extra.qtgui_ssse3_sources, .flags = qt_gui_cxx_flags ++ &[_][]const u8{"-mssse3"} });
-    qtgui_mod.addCSourceFiles(.{ .root = b.path("qt-sources/6.8.3/qtbase/src/gui"), .files = extra.qtgui_sse4_sources, .flags = qt_gui_cxx_flags ++ &[_][]const u8{"-msse4.1"} });
-    qtgui_mod.addCSourceFiles(.{ .root = b.path("qt-sources/6.8.3/qtbase/src/gui"), .files = extra.qtgui_avx2_sources, .flags = qt_gui_cxx_flags ++ &[_][]const u8{"-mavx2"} });
+    qtgui_mod.addCSourceFiles(.{ .root = b.path("qt-resource/qtbase/src/gui"), .files = extra.qtgui_sse2_sources, .flags = qt_gui_cxx_flags ++ &[_][]const u8{"-msse2"} });
+    qtgui_mod.addCSourceFiles(.{ .root = b.path("qt-resource/qtbase/src/gui"), .files = extra.qtgui_ssse3_sources, .flags = qt_gui_cxx_flags ++ &[_][]const u8{"-mssse3"} });
+    qtgui_mod.addCSourceFiles(.{ .root = b.path("qt-resource/qtbase/src/gui"), .files = extra.qtgui_sse4_sources, .flags = qt_gui_cxx_flags ++ &[_][]const u8{"-msse4.1"} });
+    qtgui_mod.addCSourceFiles(.{ .root = b.path("qt-resource/qtbase/src/gui"), .files = extra.qtgui_avx2_sources, .flags = qt_gui_cxx_flags ++ &[_][]const u8{"-mavx2"} });
     // RCC generated resources
     qtgui_mod.addCSourceFiles(.{ .root = b.path("generated/rcc"), .files = &.{ "qrc_gui_shaders.cpp", "qrc_qpdf.cpp" }, .flags = qt_gui_cxx_flags });
 
@@ -601,8 +603,8 @@ pub fn build(b: *std.Build) void {
     addQtWidgetsIncludes(qtwidgets_mod, b);
     qtwidgets_mod.addIncludePath(b.path("generated/moc_widgets/include"));
 
-    qtwidgets_mod.addCSourceFiles(.{ .root = b.path("qt-sources/6.8.3/qtbase/src/widgets"), .files = extra.qtwidgets_common_sources, .flags = qt_widgets_cxx_flags });
-    qtwidgets_mod.addCSourceFiles(.{ .root = b.path("qt-sources/6.8.3/qtbase/src/widgets"), .files = extra.qtwidgets_win_sources, .flags = qt_widgets_cxx_flags });
+    qtwidgets_mod.addCSourceFiles(.{ .root = b.path("qt-resource/qtbase/src/widgets"), .files = extra.qtwidgets_common_sources, .flags = qt_widgets_cxx_flags });
+    qtwidgets_mod.addCSourceFiles(.{ .root = b.path("qt-resource/qtbase/src/widgets"), .files = extra.qtwidgets_win_sources, .flags = qt_widgets_cxx_flags });
     // RCC generated resources for widgets
     qtwidgets_mod.addCSourceFiles(.{ .root = b.path("generated/rcc"), .files = &.{ "qrc_qmessagebox.cpp", "qrc_qstyle.cpp", "qrc_qstyle1.cpp", "qrc_qstyle_fusion.cpp" }, .flags = qt_widgets_cxx_flags });
 
@@ -641,8 +643,8 @@ pub fn build(b: *std.Build) void {
     addQtNetworkIncludes(qtnetwork_mod, b);
     qtnetwork_mod.addIncludePath(b.path("generated/moc_network/include"));
 
-    qtnetwork_mod.addCSourceFiles(.{ .root = b.path("qt-sources/6.8.3/qtbase/src/network"), .files = extra.qtnetwork_common_sources, .flags = qt_network_cxx_flags });
-    qtnetwork_mod.addCSourceFiles(.{ .root = b.path("qt-sources/6.8.3/qtbase/src/network"), .files = extra.qtnetwork_win_sources, .flags = qt_network_cxx_flags });
+    qtnetwork_mod.addCSourceFiles(.{ .root = b.path("qt-resource/qtbase/src/network"), .files = extra.qtnetwork_common_sources, .flags = qt_network_cxx_flags });
+    qtnetwork_mod.addCSourceFiles(.{ .root = b.path("qt-resource/qtbase/src/network"), .files = extra.qtnetwork_win_sources, .flags = qt_network_cxx_flags });
 
     const qtnetwork_lib = b.addLibrary(.{ .name = "Qt6Network", .linkage = .static, .root_module = qtnetwork_mod });
     b.installArtifact(qtnetwork_lib);
@@ -654,11 +656,11 @@ pub fn build(b: *std.Build) void {
     const qtconcurrent_mod = b.createModule(.{ .target = target, .optimize = optimize, .link_libc = true });
     qtconcurrent_mod.linkSystemLibrary("c++", .{});
     addQtCoreIncludes(qtconcurrent_mod, b);
-    qtconcurrent_mod.addIncludePath(b.path("qt-sources/6.8.3/qtbase/src/concurrent"));
-    qtconcurrent_mod.addIncludePath(b.path("qt-sources/6.8.3/include/QtConcurrent"));
+    qtconcurrent_mod.addIncludePath(b.path("qt-resource/qtbase/src/concurrent"));
+    qtconcurrent_mod.addIncludePath(b.path("qt-resource/include/QtConcurrent"));
 
     qtconcurrent_mod.addCSourceFiles(.{
-        .root = b.path("qt-sources/6.8.3/qtbase/src/concurrent"),
+        .root = b.path("qt-resource/qtbase/src/concurrent"),
         .files = extra.qtconcurrent_sources,
         .flags = qt_core_cxx_flags ++ &[_][]const u8{ "-DQT_BUILD_CONCURRENT_LIB" },
     });
@@ -704,12 +706,30 @@ pub fn build(b: *std.Build) void {
 
     addQtCoreIncludes(qwindows_mod, b);
     addQtGuiIncludes(qwindows_mod, b);
-    qwindows_mod.addIncludePath(b.path("qt-sources/6.8.3/qtbase/src/plugins/platforms/windows"));
-    qwindows_mod.addIncludePath(b.path("qt-sources/6.8.3/qtbase/src/plugins/platforms/windows/uiautomation"));
-    qwindows_mod.addIncludePath(b.path("qt-sources/6.8.3/qtbase/src/3rdparty/wintab"));
+    qwindows_mod.addIncludePath(b.path("qt-resource/qtbase/src/plugins/platforms/windows"));
+    qwindows_mod.addIncludePath(b.path("qt-resource/qtbase/src/plugins/platforms/windows/uiautomation"));
+    qwindows_mod.addIncludePath(b.path("qt-resource/qtbase/src/3rdparty/wintab"));
     qwindows_mod.addIncludePath(b.path("generated/moc_qwindows/include"));
 
-    qwindows_mod.addCSourceFiles(.{ .root = b.path("qt-sources/6.8.3/qtbase/src/plugins/platforms/windows"), .files = extra.qwindows_plugin_sources, .flags = qwindows_cxx_flags });
+    qwindows_mod.addCSourceFiles(.{ .root = b.path("qt-resource/qtbase/src/plugins/platforms/windows"), .files = extra.qwindows_plugin_sources, .flags = qwindows_cxx_flags });
+
+    // Compile moc-generated files for qwindows plugin
+    // The moc files use relative paths like ../../../../../../../qtbase/src/...
+    // which resolve from generated/moc_qwindows/include/ back to the source tree
+    qwindows_mod.addIncludePath(b.path("qt-resource"));
+    qwindows_mod.addCSourceFiles(.{
+        .root = b.path("generated/moc_qwindows/include"),
+        .files = &.{
+            "moc_qwindowsgdinativeinterface.cpp",
+            "moc_qwindowsinputcontext.cpp",
+            "moc_qwindowsmenu.cpp",
+            "moc_qwindowsnativeinterface.cpp",
+            "moc_qwindowsuiabaseprovider.cpp",
+            "moc_qwindowsuiamainprovider.cpp",
+            "moc_qwindowsuiaprovidercache.cpp",
+        },
+        .flags = qwindows_cxx_flags,
+    });
 
     const qwindows_lib = b.addLibrary(.{ .name = "qwindows", .linkage = .static, .root_module = qwindows_mod });
     b.installArtifact(qwindows_lib);
@@ -727,47 +747,47 @@ fn addQtCoreIncludes(mod: *std.Build.Module, b: *std.Build) void {
 
     // QtCore source directories
     const corelib_inc_paths = [_][]const u8{
-        "qt-sources/6.8.3/qtbase/src/corelib",
-        "qt-sources/6.8.3/qtbase/src/corelib/global",
-        "qt-sources/6.8.3/qtbase/src/corelib/animation",
-        "qt-sources/6.8.3/qtbase/src/corelib/compat",
-        "qt-sources/6.8.3/qtbase/src/corelib/io",
-        "qt-sources/6.8.3/qtbase/src/corelib/ipc",
-        "qt-sources/6.8.3/qtbase/src/corelib/itemmodels",
-        "qt-sources/6.8.3/qtbase/src/corelib/kernel",
-        "qt-sources/6.8.3/qtbase/src/corelib/mimetypes",
-        "qt-sources/6.8.3/qtbase/src/corelib/platform",
-        "qt-sources/6.8.3/qtbase/src/corelib/platform/windows",
-        "qt-sources/6.8.3/qtbase/src/corelib/plugin",
-        "qt-sources/6.8.3/qtbase/src/corelib/serialization",
-        "qt-sources/6.8.3/qtbase/src/corelib/text",
-        "qt-sources/6.8.3/qtbase/src/corelib/thread",
-        "qt-sources/6.8.3/qtbase/src/corelib/time",
-        "qt-sources/6.8.3/qtbase/src/corelib/tools",
-        "qt-sources/6.8.3/qtbase/src/corelib/tracing",
+        "qt-resource/qtbase/src/corelib",
+        "qt-resource/qtbase/src/corelib/global",
+        "qt-resource/qtbase/src/corelib/animation",
+        "qt-resource/qtbase/src/corelib/compat",
+        "qt-resource/qtbase/src/corelib/io",
+        "qt-resource/qtbase/src/corelib/ipc",
+        "qt-resource/qtbase/src/corelib/itemmodels",
+        "qt-resource/qtbase/src/corelib/kernel",
+        "qt-resource/qtbase/src/corelib/mimetypes",
+        "qt-resource/qtbase/src/corelib/platform",
+        "qt-resource/qtbase/src/corelib/platform/windows",
+        "qt-resource/qtbase/src/corelib/plugin",
+        "qt-resource/qtbase/src/corelib/serialization",
+        "qt-resource/qtbase/src/corelib/text",
+        "qt-resource/qtbase/src/corelib/thread",
+        "qt-resource/qtbase/src/corelib/time",
+        "qt-resource/qtbase/src/corelib/tools",
+        "qt-resource/qtbase/src/corelib/tracing",
         // 3rd party include paths
-        "qt-sources/6.8.3/qtbase/src/3rdparty/tinycbor/src",
-        "qt-sources/6.8.3/qtbase/src/3rdparty/double-conversion",
-        "qt-sources/6.8.3/qtbase/src/3rdparty/double-conversion/double-conversion",
-        "qt-sources/6.8.3/qtbase/src/3rdparty/pcre2/src",
-        "qt-sources/6.8.3/qtbase/src/3rdparty/zlib/src",
-        "qt-sources/6.8.3/qtbase/src/3rdparty/sha1",
-        "qt-sources/6.8.3/qtbase/src/3rdparty/md5",
-        "qt-sources/6.8.3/qtbase/src/3rdparty/md4",
-        "qt-sources/6.8.3/qtbase/src/3rdparty/blake2",
-        "qt-sources/6.8.3/qtbase/src/3rdparty/sha3",
-        "qt-sources/6.8.3/qtbase/src/3rdparty/rfc6234",
-        "qt-sources/6.8.3/qtbase/src/3rdparty/siphash",
-        "qt-sources/6.8.3/qtbase/src/3rdparty/easing",
-        "qt-sources/6.8.3/qtbase/src/3rdparty/forkfd",
+        "qt-resource/qtbase/src/3rdparty/tinycbor/src",
+        "qt-resource/qtbase/src/3rdparty/double-conversion",
+        "qt-resource/qtbase/src/3rdparty/double-conversion/double-conversion",
+        "qt-resource/qtbase/src/3rdparty/pcre2/src",
+        "qt-resource/qtbase/src/3rdparty/zlib/src",
+        "qt-resource/qtbase/src/3rdparty/sha1",
+        "qt-resource/qtbase/src/3rdparty/md5",
+        "qt-resource/qtbase/src/3rdparty/md4",
+        "qt-resource/qtbase/src/3rdparty/blake2",
+        "qt-resource/qtbase/src/3rdparty/sha3",
+        "qt-resource/qtbase/src/3rdparty/rfc6234",
+        "qt-resource/qtbase/src/3rdparty/siphash",
+        "qt-resource/qtbase/src/3rdparty/easing",
+        "qt-resource/qtbase/src/3rdparty/forkfd",
         // Qt includes (module-level) - uses syncqt-generated forwarding headers
-        "qt-sources/6.8.3/include",
-        "qt-sources/6.8.3/include/QtCore",
-        "qt-sources/6.8.3/include/QtCore/6.8.3",
-        "qt-sources/6.8.3/include/QtCore/6.8.3/QtCore",
-        "qt-sources/6.8.3/include/QtCore/6.8.3/QtCore/private",
+        "qt-resource/include",
+        "qt-resource/include/QtCore",
+        "qt-resource/include/QtCore/6.8.3",
+        "qt-resource/include/QtCore/6.8.3/QtCore",
+        "qt-resource/include/QtCore/6.8.3/QtCore/private",
         // mkspecs
-        "qt-sources/6.8.3/qtbase/mkspecs/win32-g++",
+        "qt-resource/qtbase/mkspecs/win32-g++",
     };
 
     for (corelib_inc_paths) |dir| {
@@ -779,35 +799,35 @@ fn addQtGuiIncludes(mod: *std.Build.Module, b: *std.Build) void {
     mod.addIncludePath(b.path("generated/QtGui"));
     mod.addIncludePath(b.path("generated/QtGui/private"));
     const gui_inc_paths = [_][]const u8{
-        "qt-sources/6.8.3/qtbase/src/gui",
-        "qt-sources/6.8.3/qtbase/src/gui/accessible",
-        "qt-sources/6.8.3/qtbase/src/gui/animation",
-        "qt-sources/6.8.3/qtbase/src/gui/image",
-        "qt-sources/6.8.3/qtbase/src/gui/itemmodels",
-        "qt-sources/6.8.3/qtbase/src/gui/kernel",
-        "qt-sources/6.8.3/qtbase/src/gui/math3d",
-        "qt-sources/6.8.3/qtbase/src/gui/opengl",
-        "qt-sources/6.8.3/qtbase/src/gui/painting",
-        "qt-sources/6.8.3/qtbase/src/gui/platform",
-        "qt-sources/6.8.3/qtbase/src/gui/platform/windows",
-        "qt-sources/6.8.3/qtbase/src/gui/rhi",
-        "qt-sources/6.8.3/qtbase/src/gui/text",
-        "qt-sources/6.8.3/qtbase/src/gui/text/freetype",
-        "qt-sources/6.8.3/qtbase/src/gui/text/windows",
-        "qt-sources/6.8.3/qtbase/src/gui/util",
-        "qt-sources/6.8.3/qtbase/src/gui/vulkan",
-        "qt-sources/6.8.3/qtbase/src/3rdparty/harfbuzz-ng/include/harfbuzz",
-        "qt-sources/6.8.3/qtbase/src/3rdparty/freetype/include",
-        "qt-sources/6.8.3/qtbase/src/3rdparty/freetype/include/freetype",
-        "qt-sources/6.8.3/qtbase/src/3rdparty/libpng",
-        "qt-sources/6.8.3/qtbase/src/3rdparty/libjpeg/src",
-        "qt-sources/6.8.3/qtbase/src/3rdparty/md4c",
-        "qt-sources/6.8.3/qtbase/src/3rdparty/D3D12MemoryAllocator",
-        "qt-sources/6.8.3/qtbase/src/3rdparty/VulkanMemoryAllocator",
-        "qt-sources/6.8.3/include/QtGui",
-        "qt-sources/6.8.3/include/QtGui/6.8.3",
-        "qt-sources/6.8.3/include/QtGui/6.8.3/QtGui",
-        "qt-sources/6.8.3/include/QtGui/6.8.3/QtGui/private",
+        "qt-resource/qtbase/src/gui",
+        "qt-resource/qtbase/src/gui/accessible",
+        "qt-resource/qtbase/src/gui/animation",
+        "qt-resource/qtbase/src/gui/image",
+        "qt-resource/qtbase/src/gui/itemmodels",
+        "qt-resource/qtbase/src/gui/kernel",
+        "qt-resource/qtbase/src/gui/math3d",
+        "qt-resource/qtbase/src/gui/opengl",
+        "qt-resource/qtbase/src/gui/painting",
+        "qt-resource/qtbase/src/gui/platform",
+        "qt-resource/qtbase/src/gui/platform/windows",
+        "qt-resource/qtbase/src/gui/rhi",
+        "qt-resource/qtbase/src/gui/text",
+        "qt-resource/qtbase/src/gui/text/freetype",
+        "qt-resource/qtbase/src/gui/text/windows",
+        "qt-resource/qtbase/src/gui/util",
+        "qt-resource/qtbase/src/gui/vulkan",
+        "qt-resource/qtbase/src/3rdparty/harfbuzz-ng/include/harfbuzz",
+        "qt-resource/qtbase/src/3rdparty/freetype/include",
+        "qt-resource/qtbase/src/3rdparty/freetype/include/freetype",
+        "qt-resource/qtbase/src/3rdparty/libpng",
+        "qt-resource/qtbase/src/3rdparty/libjpeg/src",
+        "qt-resource/qtbase/src/3rdparty/md4c",
+        "qt-resource/qtbase/src/3rdparty/D3D12MemoryAllocator",
+        "qt-resource/qtbase/src/3rdparty/VulkanMemoryAllocator",
+        "qt-resource/include/QtGui",
+        "qt-resource/include/QtGui/6.8.3",
+        "qt-resource/include/QtGui/6.8.3/QtGui",
+        "qt-resource/include/QtGui/6.8.3/QtGui/private",
     };
     for (gui_inc_paths) |dir| {
         mod.addIncludePath(b.path(dir));
@@ -818,20 +838,20 @@ fn addQtWidgetsIncludes(mod: *std.Build.Module, b: *std.Build) void {
     mod.addIncludePath(b.path("generated/QtWidgets"));
     mod.addIncludePath(b.path("generated/QtWidgets/private"));
     const widgets_inc_paths = [_][]const u8{
-        "qt-sources/6.8.3/qtbase/src/widgets",
-        "qt-sources/6.8.3/qtbase/src/widgets/accessible",
-        "qt-sources/6.8.3/qtbase/src/widgets/dialogs",
-        "qt-sources/6.8.3/qtbase/src/widgets/effects",
-        "qt-sources/6.8.3/qtbase/src/widgets/graphicsview",
-        "qt-sources/6.8.3/qtbase/src/widgets/itemviews",
-        "qt-sources/6.8.3/qtbase/src/widgets/kernel",
-        "qt-sources/6.8.3/qtbase/src/widgets/styles",
-        "qt-sources/6.8.3/qtbase/src/widgets/util",
-        "qt-sources/6.8.3/qtbase/src/widgets/widgets",
-        "qt-sources/6.8.3/include/QtWidgets",
-        "qt-sources/6.8.3/include/QtWidgets/6.8.3",
-        "qt-sources/6.8.3/include/QtWidgets/6.8.3/QtWidgets",
-        "qt-sources/6.8.3/include/QtWidgets/6.8.3/QtWidgets/private",
+        "qt-resource/qtbase/src/widgets",
+        "qt-resource/qtbase/src/widgets/accessible",
+        "qt-resource/qtbase/src/widgets/dialogs",
+        "qt-resource/qtbase/src/widgets/effects",
+        "qt-resource/qtbase/src/widgets/graphicsview",
+        "qt-resource/qtbase/src/widgets/itemviews",
+        "qt-resource/qtbase/src/widgets/kernel",
+        "qt-resource/qtbase/src/widgets/styles",
+        "qt-resource/qtbase/src/widgets/util",
+        "qt-resource/qtbase/src/widgets/widgets",
+        "qt-resource/include/QtWidgets",
+        "qt-resource/include/QtWidgets/6.8.3",
+        "qt-resource/include/QtWidgets/6.8.3/QtWidgets",
+        "qt-resource/include/QtWidgets/6.8.3/QtWidgets/private",
     };
     for (widgets_inc_paths) |dir| {
         mod.addIncludePath(b.path(dir));
@@ -842,15 +862,15 @@ fn addQtNetworkIncludes(mod: *std.Build.Module, b: *std.Build) void {
     mod.addIncludePath(b.path("generated/QtNetwork"));
     mod.addIncludePath(b.path("generated/QtNetwork/private"));
     const network_inc_paths = [_][]const u8{
-        "qt-sources/6.8.3/qtbase/src/network",
-        "qt-sources/6.8.3/qtbase/src/network/access",
-        "qt-sources/6.8.3/qtbase/src/network/kernel",
-        "qt-sources/6.8.3/qtbase/src/network/socket",
-        "qt-sources/6.8.3/qtbase/src/network/ssl",
-        "qt-sources/6.8.3/include/QtNetwork",
-        "qt-sources/6.8.3/include/QtNetwork/6.8.3",
-        "qt-sources/6.8.3/include/QtNetwork/6.8.3/QtNetwork",
-        "qt-sources/6.8.3/include/QtNetwork/6.8.3/QtNetwork/private",
+        "qt-resource/qtbase/src/network",
+        "qt-resource/qtbase/src/network/access",
+        "qt-resource/qtbase/src/network/kernel",
+        "qt-resource/qtbase/src/network/socket",
+        "qt-resource/qtbase/src/network/ssl",
+        "qt-resource/include/QtNetwork",
+        "qt-resource/include/QtNetwork/6.8.3",
+        "qt-resource/include/QtNetwork/6.8.3/QtNetwork",
+        "qt-resource/include/QtNetwork/6.8.3/QtNetwork/private",
     };
     for (network_inc_paths) |dir| {
         mod.addIncludePath(b.path(dir));

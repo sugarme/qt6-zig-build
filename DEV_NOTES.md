@@ -55,10 +55,15 @@ qtZlib, qtPcre2, qtDoubleConversion  (independent 3rd party libs)
 qt6-zig-build/
 ├── build.zig              # Main Zig build script
 ├── build.zig.zon          # Package manifest
-├── source_lists.zig       # All source file arrays
+├── source_lists.zig       # QtCore source file arrays
+├── source_lists_extra.zig # QtGui/Widgets/Network/etc source arrays
 ├── DEV_NOTES.md           # This file
-├── qtbase/                # Junction → Qt 6.8.3 source (qtbase module)
-├── qt_include/            # Junction → Qt build include dir (syncqt headers)
+├── qt-resource/
+│   ├── qtbase/            # Junction → Qt 6.8.3 Src/qtbase
+│   ├── include/           # Junction → MinGW Qt include (syncqt headers)
+│   ├── lib/               # Junction → MinGW Qt lib
+│   ├── mkspecs/           # Junction → MinGW Qt mkspecs
+│   └── plugins/           # Junction → MinGW Qt plugins
 ├── generated/
 │   ├── QtCore/
 │   │   ├── qconfig.h              # Static build configuration
@@ -204,29 +209,24 @@ zig build -Doptimize=ReleaseFast
 1. **Windows x86_64 only**: Currently configured for Windows. Linux/macOS would need
    different platform-specific source files and mkspecs.
 
-2. **No QtGui/QtWidgets**: Only QtCore is built. Extending to QtGui and QtWidgets
-   would require:
-   - Building HarfBuzz, FreeType, libpng (3rd party)
-   - Adding QtGui source files (~400+ files)
-   - Adding QtWidgets source files (~300+ files)
-   - Building platform plugins (qwindows)
-
-3. **Pre-generated MOC**: MOC outputs are pre-generated from an existing build.
+2. **Pre-generated MOC**: MOC outputs are pre-generated from an existing build.
    If Qt headers change, they need to be regenerated using the built `moc.exe`.
 
-4. **No QML/Qt Quick**: Only the C++ core is built.
+3. **No QML/Qt Quick**: Only the C++ modules (Core, Gui, Widgets, Network, Concurrent) are built.
 
-5. **syncqt dependency**: The `qt_include/` directory requires syncqt-generated
-   forwarding headers from an existing Qt build.
+4. **syncqt dependency**: The `qt-resource/include/` directory requires syncqt-generated
+   forwarding headers from an existing Qt installation (MinGW build).
 
 ## Future Work
 
-- [ ] Build QtGui module (painting, fonts, images, windowing)
-- [ ] Build QtWidgets module (UI widgets, dialogs, layouts)
-- [ ] Build platform plugins (qwindows for Windows)
+- [x] Build QtGui module (painting, fonts, images, windowing)
+- [x] Build QtWidgets module (UI widgets, dialogs, layouts)
+- [x] Build QtNetwork module (HTTP, sockets, DNS)
+- [x] Build QtConcurrent module (thread pool, parallel execution)
+- [x] Build platform plugins (qwindows for Windows)
+- [x] Build harfbuzz, freetype, libpng, libjpeg as 3rd party dependencies
 - [ ] Run syncqt from Zig build to generate forwarding headers
 - [ ] Add cross-compilation support (Linux, macOS targets)
-- [ ] Build harfbuzz, freetype, libpng as 3rd party dependencies
 - [ ] Add build options for feature selection
 - [ ] Generate MOC outputs as part of the build process
 

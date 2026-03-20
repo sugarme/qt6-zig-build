@@ -6,7 +6,7 @@
 ** WARNING! All changes made in this file will be lost!
 *****************************************************************************/
 
-#include "../../../../../../../qtbase/src/plugins/platforms/windows/uiautomation/qwindowsuiamainprovider.h"
+#include "uiautomation/qwindowsuiamainprovider.h"
 #include <QtCore/qmetatype.h>
 
 #include <QtCore/qtmochelpers.h>

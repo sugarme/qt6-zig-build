@@ -6,7 +6,7 @@
 ** WARNING! All changes made in this file will be lost!
 *****************************************************************************/
 
-#include "../../../../../../../qtbase/src/plugins/platforms/windows/qwindowsinputcontext.h"
+#include "qwindowsinputcontext.h"
 #include <QtCore/qmetatype.h>
 
 #include <QtCore/qtmochelpers.h>
