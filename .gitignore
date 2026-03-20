@@ -2,9 +2,9 @@
 zig-out/
 .zig-cache/
 
-# Qt source (junction/symlink - not part of this repo)
-qtbase/
-qt_include/
+# Qt source (junctions/symlinks to actual Qt source and build include)
+qt-sources/*/qtbase/
+qt-sources/*/include/
 
 # OS files
 Thumbs.db

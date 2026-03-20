@@ -27,7 +27,35 @@ Build Qt 6.8.3 as static libraries using the Zig build system, replacing CMake/N
 
 - **Zig** 0.14.0+ (tested with 0.16.0-dev) - [ziglang.org](https://ziglang.org/download/)
 - **Qt 6.8.3 source** code (qtbase module)
-- An existing Qt CMake build (for syncqt-generated forwarding headers and MOC outputs)
+- An existing Qt CMake build (for syncqt-generated forwarding headers and pre-generated MOC outputs)
+
+## Project Structure
+
+```
+qt6-zig-build/
+├── build.zig                 # Main Zig build script
+├── build.zig.zon             # Package manifest
+├── source_lists.zig          # QtCore source file arrays
+├── source_lists_extra.zig    # QtGui/Widgets/Network/etc source arrays
+├── qt-sources/
+│   └── 6.8.3/                # Qt version directory
+│       ├── qtbase/            # Junction → Qt 6.8.3 qtbase source
+│       └── include/           # Junction → Qt build syncqt headers
+├── generated/
+│   ├── QtCore/               # Config headers (qconfig.h, etc.)
+│   ├── QtGui/                # QtGui config headers
+│   ├── QtWidgets/            # QtWidgets config headers
+│   ├── QtNetwork/            # QtNetwork config headers
+│   ├── moc/                  # QtCore MOC outputs
+│   ├── moc_gui/              # QtGui MOC outputs
+│   ├── moc_widgets/          # QtWidgets MOC outputs
+│   ├── moc_network/          # QtNetwork MOC outputs
+│   ├── moc_qwindows/         # Platform plugin MOC outputs
+│   ├── rcc/                  # RCC-generated resources
+│   └── moc_parser_patched.cpp # Clang compatibility patch
+├── DEV_NOTES.md
+└── README.md
+```
 
 ## Setup
 
@@ -37,14 +65,22 @@ git clone https://github.com/sugarme/qt6-zig-build.git
 cd qt6-zig-build
 ```
 
-2. Create directory junction to Qt source (adjust path as needed):
+2. Set up Qt source code in the `qt-sources/6.8.3/` directory:
 ```bash
-# Windows
-mklink /J qtbase path\to\qt-sources\6.8.3\Src\qtbase
+# Create version directory
+mkdir -p qt-sources/6.8.3
 
-# Link to existing Qt build's include directory (syncqt headers)
-mklink /J qt_include path\to\qt-sources\6.8.3\build\qtbase\include
+# Windows: Create directory junctions to your Qt source and build
+mklink /J qt-sources\6.8.3\qtbase C:\path\to\qt-sources\6.8.3\Src\qtbase
+mklink /J qt-sources\6.8.3\include C:\path\to\qt-sources\6.8.3\build\qtbase\include
+
+# Linux/macOS: Use symlinks instead
+# ln -s /path/to/qt-sources/6.8.3/Src/qtbase qt-sources/6.8.3/qtbase
+# ln -s /path/to/qt-sources/6.8.3/build/qtbase/include qt-sources/6.8.3/include
 ```
+
+The `qtbase` junction points to the Qt 6.8.3 source code (the `qtbase` submodule).
+The `include` junction points to the syncqt-generated forwarding headers from an existing CMake build.
 
 ## Build Commands
 
@@ -52,7 +88,7 @@ mklink /J qt_include path\to\qt-sources\6.8.3\build\qtbase\include
 # Debug build (all modules)
 zig build
 
-# Release build optimized for size
+# Release build optimized for size (recommended)
 zig build -Doptimize=ReleaseSmall
 
 # Release build optimized for speed
@@ -65,8 +101,27 @@ zig build -Doptimize=ReleaseSafe
 ## Output
 
 Build artifacts are placed in `zig-out/`:
-- `zig-out/lib/` - Static libraries (.lib)
-- `zig-out/bin/` - Executables (moc.exe, rcc.exe)
+```
+zig-out/
+├── lib/
+│   ├── Qt6Core.lib
+│   ├── Qt6Gui.lib
+│   ├── Qt6Widgets.lib
+│   ├── Qt6Network.lib
+│   ├── Qt6Concurrent.lib
+│   ├── qwindows.lib
+│   ├── qtHarfbuzz.lib
+│   ├── qtFreetype.lib
+│   ├── qtLibpng.lib
+│   ├── qtLibjpeg.lib
+│   ├── qtZlib.lib
+│   ├── qtPcre2.lib
+│   ├── qtDoubleConversion.lib
+│   └── qtBootstrap.lib
+└── bin/
+    ├── moc.exe
+    └── rcc.exe
+```
 
 ## Verify
 
@@ -102,21 +157,6 @@ For static Qt builds, you must also:
 - Define `QT_STATIC` in your application
 - Use `Q_IMPORT_PLUGIN(QWindowsIntegrationPlugin)` for the platform plugin
 - Link Windows system libraries: `user32`, `gdi32`, `shell32`, `advapi32`, `ole32`, etc.
-
-## Architecture
-
-```
-qtbase/ (junction) ──→ Qt 6.8.3 source code
-qt_include/ (junction) ──→ syncqt-generated forwarding headers
-generated/
-├── QtCore/, QtGui/, QtWidgets/, QtNetwork/  ── config headers
-├── moc/, moc_gui/, moc_widgets/, moc_network/, moc_qwindows/  ── MOC outputs
-├── rcc/  ── RCC-generated resource files
-└── moc_parser_patched.cpp  ── Clang compatibility patch
-build.zig            ── Main build script
-source_lists.zig     ── QtCore source file arrays
-source_lists_extra.zig ── All other module source file arrays
-```
 
 ## Platform Support
 
