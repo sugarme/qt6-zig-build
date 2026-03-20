@@ -1,0 +1,228 @@
+# Qt6 Static Build with Zig Build System
+
+## Overview
+
+This project builds Qt 6.8.3 (QtCore module) as a static library using the Zig build system,
+replacing CMake/Ninja with `build.zig`. It also builds the essential Qt build tools (`moc` and `rcc`)
+from source.
+
+## Architecture
+
+### Build Targets
+
+| Target | Type | Description |
+|--------|------|-------------|
+| `Qt6Core.lib` | Static library | Full QtCore module with all features |
+| `qtBootstrap.lib` | Static library | Minimal QtCore subset for building tools |
+| `qtZlib.lib` | Static library | Bundled zlib 1.3.1 |
+| `qtPcre2.lib` | Static library | Bundled PCRE2 10.45 (16-bit code units) |
+| `qtDoubleConversion.lib` | Static library | Bundled double-conversion 3.3.0 |
+| `moc.exe` | Executable | Qt Meta Object Compiler |
+| `rcc.exe` | Executable | Qt Resource Compiler |
+
+### Build Order / Dependencies
+
+```
+qtZlib, qtPcre2, qtDoubleConversion  (independent 3rd party libs)
+        │
+        ▼
+   qtBootstrap  (minimal QtCore + embedded PCRE2, no MOC needed)
+        │
+        ▼
+    moc.exe  (links qtBootstrap)
+        │
+        ▼
+   Qt6Core.lib  (full QtCore with MOC outputs)
+        │
+        ▼
+    rcc.exe  (links Qt6Core + qtZlib + qtPcre2)
+```
+
+### Directory Structure
+
+```
+qt6-zig-build/
+├── build.zig              # Main Zig build script
+├── build.zig.zon          # Package manifest
+├── source_lists.zig       # All source file arrays
+├── DEV_NOTES.md           # This file
+├── qtbase/                # Junction → Qt 6.8.3 source (qtbase module)
+├── qt_include/            # Junction → Qt build include dir (syncqt headers)
+├── generated/
+│   ├── QtCore/
+│   │   ├── qconfig.h              # Static build configuration
+│   │   ├── qtcore-config.h         # QtCore feature flags
+│   │   ├── qtdeprecationdefinitions.h
+│   │   ├── qconfig.cpp             # Library path configuration
+│   │   └── private/
+│   │       ├── qconfig_p.h         # Private configuration
+│   │       ├── qtcore-config_p.h   # Private feature flags
+│   │       └── qtcore_tracepoints_p.h
+│   ├── moc/
+│   │   ├── moc_qnamespace.cpp      # Standalone MOC output
+│   │   └── include/                # All MOC-generated files
+│   │       ├── moc_qobject.cpp
+│   │       ├── moc_qcoreapplication.cpp
+│   │       └── ... (68 files)
+│   ├── qmimeprovider_database.cpp  # Generated MIME type database
+│   ├── moc_parser_patched.cpp      # Clang-compatible moc parser
+│   └── zig_compat.h
+└── zig-out/
+    ├── lib/               # Built static libraries
+    └── bin/               # Built executables (moc, rcc)
+```
+
+## Design Decisions
+
+### 1. Why Zig Build System?
+
+- **Single toolchain**: Zig includes a C/C++ compiler (Clang-based), linker, and build system
+- **Cross-compilation**: Built-in support for targeting different platforms
+- **No external dependencies**: No need for CMake, Ninja, MSVC, or MinGW
+- **Reproducible builds**: Hermetic build environment
+- **Simpler build scripts**: Zig's build API is more straightforward than CMake
+
+### 2. Bootstrap vs Full QtCore
+
+Qt's original build system uses a two-phase approach:
+1. Build **Bootstrap QtCore** - a stripped-down version without QObject/moc support
+2. Build **moc** using Bootstrap
+3. Build **full QtCore** using moc-generated files
+
+We replicate this approach. Bootstrap defines `QT_BOOTSTRAPPED` which disables:
+- QObject and signals/slots (`QT_NO_QOBJECT`)
+- Threading (`QT_FEATURE_thread = -1`)
+- Exceptions (`QT_NO_EXCEPTIONS`)
+- Data streams (`QT_NO_DATASTREAM`)
+- Plugins/library loading
+- And many more features
+
+### 3. Pre-generated MOC Outputs
+
+Instead of building moc first and then running it, we use pre-generated MOC outputs
+from an existing CMake build. This avoids the chicken-and-egg problem and simplifies
+the build process. The MOC outputs are stored in `generated/moc/`.
+
+Key insight: Most MOC files are `#include`d directly from the source .cpp files
+(e.g., `qobject.cpp` includes `moc_qobject.cpp` at the end). Only `moc_qnamespace.cpp`
+needs standalone compilation.
+
+### 4. Configuration Headers
+
+The static build configuration differs from the default Qt build:
+- `QT_FEATURE_shared = -1` (disabled)
+- `QT_FEATURE_static = 1` (enabled)
+- `QT_STATIC` defined
+- `QT_FEATURE_dbus = -1` (disabled for simplicity)
+- `QT_FEATURE_cpp_winrt = -1` (not needed)
+- `QT_FEATURE_version_tagging = -1` (disabled for static)
+
+### 5. Platform Specification
+
+We use `win32-g++` mkspec instead of `win32-msvc` because Zig's Clang backend is
+more compatible with GCC/MinGW conventions. The MSVC mkspec has `typedef int mode_t`
+which conflicts with Zig's libc `typedef unsigned short mode_t`.
+
+### 6. Clang Compatibility Patches
+
+One source file required patching for Clang compatibility:
+- `parser.cpp` (moc tool): Uses `const char[] + QByteArrayView` which relies on
+  MSVC's more permissive implicit conversion. Patched to use explicit `QByteArray()`
+  constructors.
+
+## Source File Analysis
+
+### QtCore Source Counts (Windows)
+
+| Category | Files |
+|----------|-------|
+| Common (cross-platform) | ~180 |
+| Windows-specific | ~25 |
+| MOC-generated | 69 |
+| 3rd party (embedded) | 2 (SHA hash algorithms) |
+| Generated | 2 (MIME database, qconfig.cpp) |
+| **Total** | **~278** |
+
+### Third-Party Libraries
+
+| Library | Version | Files | Purpose |
+|---------|---------|-------|---------|
+| zlib | 1.3.1 | 15 | Compression |
+| PCRE2 | 10.45 | 28 | Regular expressions |
+| double-conversion | 3.3.0 | 8 | Float↔string conversion |
+| tinycbor | 0.6.1 | Included via headers | CBOR serialization |
+| rfc6234 | - | 2 | SHA-224/256/384/512 |
+
+## Build Commands
+
+```bash
+# Debug build (default)
+zig build
+
+# Release build (optimized for size)
+zig build -Doptimize=ReleaseSmall
+
+# Release build (optimized for speed)
+zig build -Doptimize=ReleaseFast
+
+# Verify built tools
+./zig-out/bin/moc.exe --version
+./zig-out/bin/rcc.exe --version
+```
+
+## Build Output Sizes
+
+### Debug Build
+| Artifact | Size |
+|----------|------|
+| Qt6Core.lib | 197 MB |
+| qtBootstrap.lib | 57 MB |
+| moc.exe | 13 MB |
+| rcc.exe | 31 MB |
+
+### ReleaseSmall Build
+| Artifact | Size |
+|----------|------|
+| Qt6Core.lib | 16.5 MB |
+| qtBootstrap.lib | 5.1 MB |
+| moc.exe | 2.3 MB |
+| rcc.exe | 4.2 MB |
+
+## Known Limitations
+
+1. **Windows x86_64 only**: Currently configured for Windows. Linux/macOS would need
+   different platform-specific source files and mkspecs.
+
+2. **No QtGui/QtWidgets**: Only QtCore is built. Extending to QtGui and QtWidgets
+   would require:
+   - Building HarfBuzz, FreeType, libpng (3rd party)
+   - Adding QtGui source files (~400+ files)
+   - Adding QtWidgets source files (~300+ files)
+   - Building platform plugins (qwindows)
+
+3. **Pre-generated MOC**: MOC outputs are pre-generated from an existing build.
+   If Qt headers change, they need to be regenerated using the built `moc.exe`.
+
+4. **No QML/Qt Quick**: Only the C++ core is built.
+
+5. **syncqt dependency**: The `qt_include/` directory requires syncqt-generated
+   forwarding headers from an existing Qt build.
+
+## Future Work
+
+- [ ] Build QtGui module (painting, fonts, images, windowing)
+- [ ] Build QtWidgets module (UI widgets, dialogs, layouts)
+- [ ] Build platform plugins (qwindows for Windows)
+- [ ] Run syncqt from Zig build to generate forwarding headers
+- [ ] Add cross-compilation support (Linux, macOS targets)
+- [ ] Build harfbuzz, freetype, libpng as 3rd party dependencies
+- [ ] Add build options for feature selection
+- [ ] Generate MOC outputs as part of the build process
+
+## References
+
+- [VTK Zig Build](../vtk-zig-build/) - Reference implementation for large C++ project
+- [allyourcodebase](https://github.com/allyourcodebase) - Zig build patterns for C/C++ libraries
+- [Qt 6.8.3 Source](https://download.qt.io/official_releases/qt/6.8/6.8.3/)
+- [Qt Build System](https://doc.qt.io/qt-6/build-sources.html)
+- [Qt Platform Abstraction](https://doc.qt.io/qt-6/qpa.html)

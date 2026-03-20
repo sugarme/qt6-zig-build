@@ -1,0 +1,11 @@
+.{
+    .fingerprint = 0xf0735e2b1477685e,
+    .name = .qt6_static,
+    .version = "6.8.3",
+    .minimum_zig_version = "0.14.0",
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "generated",
+    },
+}

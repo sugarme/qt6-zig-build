@@ -1,0 +1,11 @@
+# Zig build artifacts
+zig-out/
+.zig-cache/
+
+# Qt source (junction/symlink - not part of this repo)
+qtbase/
+qt_include/
+
+# OS files
+Thumbs.db
+.DS_Store
