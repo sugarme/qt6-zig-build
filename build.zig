@@ -1,5 +1,6 @@
 const std = @import("std");
 const sources = @import("source_lists.zig");
+const extra = @import("source_lists_extra.zig");
 
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
@@ -446,6 +447,272 @@ pub fn build(b: *std.Build) void {
         .root_module = rcc_mod,
     });
     b.installArtifact(rcc_exe);
+
+    // ========================================================================
+    // 8. HarfBuzz (static library)
+    // ========================================================================
+
+    const harfbuzz_mod = b.createModule(.{ .target = target, .optimize = optimize, .link_libc = true });
+    harfbuzz_mod.linkSystemLibrary("c++", .{});
+    harfbuzz_mod.addCSourceFiles(.{
+        .root = b.path("qtbase/src/3rdparty/harfbuzz-ng"),
+        .files = extra.harfbuzz_sources,
+        .flags = &.{ "-std=c++17", "-w", "-DHAVE_ATEXIT", "-DHAVE_CONFIG_H", "-DHB_EXTERN=", "-DHB_NDEBUG", "-DHB_NO_UNICODE_FUNCS", "-DQT_NO_VERSION_TAGGING", "-DHAVE_OT", "-DHAVE_FALLBACK", "-DHB_NO_WIN1256", "-fvisibility=hidden" },
+    });
+    harfbuzz_mod.addIncludePath(b.path("qtbase/src/3rdparty/harfbuzz-ng/src"));
+    harfbuzz_mod.addIncludePath(b.path("qtbase/src/3rdparty/harfbuzz-ng/include/harfbuzz"));
+    addQtCoreIncludes(harfbuzz_mod, b);
+    const harfbuzz_lib = b.addLibrary(.{ .name = "qtHarfbuzz", .linkage = .static, .root_module = harfbuzz_mod });
+    b.installArtifact(harfbuzz_lib);
+
+    // ========================================================================
+    // 9. FreeType (static library)
+    // ========================================================================
+
+    const freetype_mod = b.createModule(.{ .target = target, .optimize = optimize, .link_libc = true });
+    freetype_mod.addCSourceFiles(.{
+        .root = b.path("qtbase/src/3rdparty/freetype"),
+        .files = extra.freetype_sources,
+        .flags = common_c_flags ++ &[_][]const u8{ "-DFT2_BUILD_LIBRARY", "-DFT_CONFIG_OPTION_SYSTEM_ZLIB", "-DTT_CONFIG_OPTION_SUBPIXEL_HINTING", "-DFT_CONFIG_OPTION_USE_PNG", "-fvisibility=hidden" },
+    });
+    freetype_mod.addIncludePath(b.path("qtbase/src/3rdparty/freetype/include"));
+    freetype_mod.addIncludePath(b.path("qtbase/src/3rdparty/zlib/src"));
+    freetype_mod.addIncludePath(b.path("qtbase/src/3rdparty/libpng"));
+    addQtCoreIncludes(freetype_mod, b);
+    const freetype_lib = b.addLibrary(.{ .name = "qtFreetype", .linkage = .static, .root_module = freetype_mod });
+    b.installArtifact(freetype_lib);
+
+    // ========================================================================
+    // 10. libpng (static library)
+    // ========================================================================
+
+    const libpng_mod = b.createModule(.{ .target = target, .optimize = optimize, .link_libc = true });
+    libpng_mod.addCSourceFiles(.{
+        .root = b.path("qtbase/src/3rdparty/libpng"),
+        .files = extra.libpng_sources,
+        .flags = common_c_flags ++ &[_][]const u8{ "-DPNG_ARM_NEON_OPT=0", "-DPNG_POWERPC_VSX_OPT=0", "-DPNG_IMPEXP=", "-fvisibility=hidden" },
+    });
+    libpng_mod.addIncludePath(b.path("qtbase/src/3rdparty/libpng"));
+    libpng_mod.addIncludePath(b.path("qtbase/src/3rdparty/zlib/src"));
+    addQtCoreIncludes(libpng_mod, b);
+    const libpng_lib = b.addLibrary(.{ .name = "qtLibpng", .linkage = .static, .root_module = libpng_mod });
+    b.installArtifact(libpng_lib);
+
+    // ========================================================================
+    // 11. libjpeg (static library)
+    // ========================================================================
+
+    const libjpeg_mod = b.createModule(.{ .target = target, .optimize = optimize, .link_libc = true });
+    libjpeg_mod.addCSourceFiles(.{
+        .root = b.path("qtbase/src/3rdparty/libjpeg"),
+        .files = extra.libjpeg_sources,
+        .flags = common_c_flags ++ &[_][]const u8{ "-fvisibility=hidden" },
+    });
+    libjpeg_mod.addIncludePath(b.path("qtbase/src/3rdparty/libjpeg/src"));
+    const libjpeg_lib = b.addLibrary(.{ .name = "qtLibjpeg", .linkage = .static, .root_module = libjpeg_mod });
+    b.installArtifact(libjpeg_lib);
+
+    // ========================================================================
+    // 12. Qt6Gui (static library)
+    // ========================================================================
+
+    const qt_gui_cxx_flags: []const []const u8 = &.{
+        "-std=c++17", "-w", "-fdelayed-template-parsing",
+        "-DWIN32", "-D_WINDOWS", "-DUNICODE", "-D_UNICODE",
+        "-D_CRT_SECURE_NO_WARNINGS", "-D_CRT_NONSTDC_NO_WARNINGS",
+        "-DNOMINMAX", "-D_ENABLE_EXTENDED_ALIGNED_STORAGE",
+        "-DQT_NO_FOREACH", "-DQT_NO_USING_NAMESPACE",
+        "-DQT_USE_NODISCARD_FILE_OPEN", "-DQT_STATIC",
+        "-DQT_BUILD_GUI_LIB", "-DQT_NO_DEBUG",
+        "-DQT_USE_QSTRINGBUILDER",
+        "-DQT_FEATURE_cpp_winrt=-1",
+        "-DQT_QPA_DEFAULT_PLATFORM_NAME=\"windows\"",
+        "-DPCRE2_STATIC", "-DPCRE2_CODE_UNIT_WIDTH=16",
+    };
+
+    const qtgui_mod = b.createModule(.{ .target = target, .optimize = optimize, .link_libc = true });
+    qtgui_mod.linkSystemLibrary("c++", .{});
+    qtgui_mod.linkSystemLibrary("advapi32", .{});
+    qtgui_mod.linkSystemLibrary("gdi32", .{});
+    qtgui_mod.linkSystemLibrary("ole32", .{});
+    qtgui_mod.linkSystemLibrary("shell32", .{});
+    qtgui_mod.linkSystemLibrary("user32", .{});
+    qtgui_mod.linkSystemLibrary("uxtheme", .{});
+    qtgui_mod.linkSystemLibrary("d3d11", .{});
+    qtgui_mod.linkSystemLibrary("dxgi", .{});
+    qtgui_mod.linkSystemLibrary("dxguid", .{});
+    qtgui_mod.linkSystemLibrary("d3d12", .{});
+    qtgui_mod.linkSystemLibrary("uuid", .{});
+    qtgui_mod.linkSystemLibrary("dwrite", .{});
+
+    addQtCoreIncludes(qtgui_mod, b);
+    addQtGuiIncludes(qtgui_mod, b);
+    qtgui_mod.addIncludePath(b.path("generated/moc_gui/include"));
+
+    // QtGui common sources
+    qtgui_mod.addCSourceFiles(.{ .root = b.path("qtbase/src/gui"), .files = extra.qtgui_common_sources, .flags = qt_gui_cxx_flags });
+    // QtGui C sources
+    qtgui_mod.addCSourceFiles(.{ .root = b.path("qtbase/src/gui"), .files = extra.qtgui_c_sources, .flags = common_c_flags });
+    // QtGui Windows sources
+    qtgui_mod.addCSourceFiles(.{ .root = b.path("qtbase/src/gui"), .files = extra.qtgui_win_sources, .flags = qt_gui_cxx_flags });
+    // D3D12 Memory Allocator
+    qtgui_mod.addCSourceFiles(.{ .root = b.path("qtbase/src/3rdparty"), .files = &.{"D3D12MemoryAllocator/D3D12MemAlloc.cpp"}, .flags = qt_gui_cxx_flags });
+    // md4c markdown parser
+    qtgui_mod.addCSourceFiles(.{ .root = b.path("qtbase/src/3rdparty/md4c"), .files = &.{"md4c.c"}, .flags = common_c_flags ++ &[_][]const u8{"-DMD4C_USE_UTF8"} });
+    // SIMD sources
+    qtgui_mod.addCSourceFiles(.{ .root = b.path("qtbase/src/gui"), .files = extra.qtgui_sse2_sources, .flags = qt_gui_cxx_flags ++ &[_][]const u8{"-msse2"} });
+    qtgui_mod.addCSourceFiles(.{ .root = b.path("qtbase/src/gui"), .files = extra.qtgui_ssse3_sources, .flags = qt_gui_cxx_flags ++ &[_][]const u8{"-mssse3"} });
+    qtgui_mod.addCSourceFiles(.{ .root = b.path("qtbase/src/gui"), .files = extra.qtgui_sse4_sources, .flags = qt_gui_cxx_flags ++ &[_][]const u8{"-msse4.1"} });
+    qtgui_mod.addCSourceFiles(.{ .root = b.path("qtbase/src/gui"), .files = extra.qtgui_avx2_sources, .flags = qt_gui_cxx_flags ++ &[_][]const u8{"-mavx2"} });
+    // RCC generated resources
+    qtgui_mod.addCSourceFiles(.{ .root = b.path("generated/rcc"), .files = &.{ "qrc_gui_shaders.cpp", "qrc_qpdf.cpp" }, .flags = qt_gui_cxx_flags });
+
+    const qtgui_lib = b.addLibrary(.{ .name = "Qt6Gui", .linkage = .static, .root_module = qtgui_mod });
+    b.installArtifact(qtgui_lib);
+
+    // ========================================================================
+    // 13. Qt6Widgets (static library)
+    // ========================================================================
+
+    const qt_widgets_cxx_flags: []const []const u8 = &.{
+        "-std=c++17", "-w", "-fdelayed-template-parsing",
+        "-DWIN32", "-D_WINDOWS", "-DUNICODE", "-D_UNICODE",
+        "-D_CRT_SECURE_NO_WARNINGS", "-D_CRT_NONSTDC_NO_WARNINGS",
+        "-DNOMINMAX", "-D_ENABLE_EXTENDED_ALIGNED_STORAGE",
+        "-DQT_NO_FOREACH", "-DQT_NO_USING_NAMESPACE",
+        "-DQT_USE_NODISCARD_FILE_OPEN", "-DQT_STATIC",
+        "-DQT_BUILD_WIDGETS_LIB", "-DQT_NO_DEBUG",
+        "-DQT_USE_QSTRINGBUILDER",
+        "-DQT_FEATURE_cpp_winrt=-1",
+        "-DPCRE2_STATIC", "-DPCRE2_CODE_UNIT_WIDTH=16",
+    };
+
+    const qtwidgets_mod = b.createModule(.{ .target = target, .optimize = optimize, .link_libc = true });
+    qtwidgets_mod.linkSystemLibrary("c++", .{});
+    qtwidgets_mod.linkSystemLibrary("dwmapi", .{});
+    qtwidgets_mod.linkSystemLibrary("shell32", .{});
+    qtwidgets_mod.linkSystemLibrary("uxtheme", .{});
+    qtwidgets_mod.linkSystemLibrary("user32", .{});
+    qtwidgets_mod.linkSystemLibrary("gdi32", .{});
+    qtwidgets_mod.linkSystemLibrary("uuid", .{});
+
+    addQtCoreIncludes(qtwidgets_mod, b);
+    addQtGuiIncludes(qtwidgets_mod, b);
+    addQtWidgetsIncludes(qtwidgets_mod, b);
+    qtwidgets_mod.addIncludePath(b.path("generated/moc_widgets/include"));
+
+    qtwidgets_mod.addCSourceFiles(.{ .root = b.path("qtbase/src/widgets"), .files = extra.qtwidgets_common_sources, .flags = qt_widgets_cxx_flags });
+    qtwidgets_mod.addCSourceFiles(.{ .root = b.path("qtbase/src/widgets"), .files = extra.qtwidgets_win_sources, .flags = qt_widgets_cxx_flags });
+    // RCC generated resources for widgets
+    qtwidgets_mod.addCSourceFiles(.{ .root = b.path("generated/rcc"), .files = &.{ "qrc_qmessagebox.cpp", "qrc_qstyle.cpp", "qrc_qstyle1.cpp", "qrc_qstyle_fusion.cpp" }, .flags = qt_widgets_cxx_flags });
+
+    const qtwidgets_lib = b.addLibrary(.{ .name = "Qt6Widgets", .linkage = .static, .root_module = qtwidgets_mod });
+    b.installArtifact(qtwidgets_lib);
+
+    // ========================================================================
+    // 14. Qt6Network (static library)
+    // ========================================================================
+
+    const qt_network_cxx_flags: []const []const u8 = &.{
+        "-std=c++17", "-w", "-fdelayed-template-parsing",
+        "-DWIN32", "-D_WINDOWS", "-DUNICODE", "-D_UNICODE",
+        "-D_CRT_SECURE_NO_WARNINGS", "-D_CRT_NONSTDC_NO_WARNINGS",
+        "-DNOMINMAX", "-D_ENABLE_EXTENDED_ALIGNED_STORAGE",
+        "-DQT_NO_FOREACH", "-DQT_NO_USING_NAMESPACE",
+        "-DQT_USE_NODISCARD_FILE_OPEN", "-DQT_STATIC",
+        "-DQT_BUILD_NETWORK_LIB", "-DQT_NO_DEBUG",
+        "-DQT_USE_QSTRINGBUILDER",
+        "-DQT_FEATURE_cpp_winrt=-1",
+        "-DPCRE2_STATIC", "-DPCRE2_CODE_UNIT_WIDTH=16",
+    };
+
+    const qtnetwork_mod = b.createModule(.{ .target = target, .optimize = optimize, .link_libc = true });
+    qtnetwork_mod.linkSystemLibrary("c++", .{});
+    qtnetwork_mod.linkSystemLibrary("advapi32", .{});
+    qtnetwork_mod.linkSystemLibrary("dnsapi", .{});
+    qtnetwork_mod.linkSystemLibrary("iphlpapi", .{});
+    qtnetwork_mod.linkSystemLibrary("secur32", .{});
+    qtnetwork_mod.linkSystemLibrary("winhttp", .{});
+    qtnetwork_mod.linkSystemLibrary("ws2_32", .{});
+    qtnetwork_mod.linkSystemLibrary("user32", .{});
+    qtnetwork_mod.linkSystemLibrary("uuid", .{});
+
+    addQtCoreIncludes(qtnetwork_mod, b);
+    addQtNetworkIncludes(qtnetwork_mod, b);
+    qtnetwork_mod.addIncludePath(b.path("generated/moc_network/include"));
+
+    qtnetwork_mod.addCSourceFiles(.{ .root = b.path("qtbase/src/network"), .files = extra.qtnetwork_common_sources, .flags = qt_network_cxx_flags });
+    qtnetwork_mod.addCSourceFiles(.{ .root = b.path("qtbase/src/network"), .files = extra.qtnetwork_win_sources, .flags = qt_network_cxx_flags });
+
+    const qtnetwork_lib = b.addLibrary(.{ .name = "Qt6Network", .linkage = .static, .root_module = qtnetwork_mod });
+    b.installArtifact(qtnetwork_lib);
+
+    // ========================================================================
+    // 15. Qt6Concurrent (static library)
+    // ========================================================================
+
+    const qtconcurrent_mod = b.createModule(.{ .target = target, .optimize = optimize, .link_libc = true });
+    qtconcurrent_mod.linkSystemLibrary("c++", .{});
+    addQtCoreIncludes(qtconcurrent_mod, b);
+    qtconcurrent_mod.addIncludePath(b.path("qtbase/src/concurrent"));
+    qtconcurrent_mod.addIncludePath(b.path("qt_include/QtConcurrent"));
+
+    qtconcurrent_mod.addCSourceFiles(.{
+        .root = b.path("qtbase/src/concurrent"),
+        .files = extra.qtconcurrent_sources,
+        .flags = qt_core_cxx_flags ++ &[_][]const u8{ "-DQT_BUILD_CONCURRENT_LIB" },
+    });
+
+    const qtconcurrent_lib = b.addLibrary(.{ .name = "Qt6Concurrent", .linkage = .static, .root_module = qtconcurrent_mod });
+    b.installArtifact(qtconcurrent_lib);
+
+    // ========================================================================
+    // 16. qwindows platform plugin (static library)
+    // ========================================================================
+
+    const qwindows_cxx_flags: []const []const u8 = &.{
+        "-std=c++17", "-w", "-fdelayed-template-parsing",
+        "-DWIN32", "-D_WINDOWS", "-DUNICODE", "-D_UNICODE",
+        "-D_CRT_SECURE_NO_WARNINGS", "-DNOMINMAX",
+        "-DQT_NO_FOREACH", "-DQT_NO_CAST_FROM_ASCII",
+        "-DQT_STATIC", "-DQT_NO_DEBUG",
+        "-DQT_FEATURE_cpp_winrt=-1",
+        "-DPCRE2_STATIC", "-DPCRE2_CODE_UNIT_WIDTH=16",
+    };
+
+    const qwindows_mod = b.createModule(.{ .target = target, .optimize = optimize, .link_libc = true });
+    qwindows_mod.linkSystemLibrary("c++", .{});
+    qwindows_mod.linkSystemLibrary("advapi32", .{});
+    qwindows_mod.linkSystemLibrary("dwmapi", .{});
+    qwindows_mod.linkSystemLibrary("gdi32", .{});
+    qwindows_mod.linkSystemLibrary("imm32", .{});
+    qwindows_mod.linkSystemLibrary("ole32", .{});
+    qwindows_mod.linkSystemLibrary("oleaut32", .{});
+    qwindows_mod.linkSystemLibrary("setupapi", .{});
+    qwindows_mod.linkSystemLibrary("shell32", .{});
+    qwindows_mod.linkSystemLibrary("shlwapi", .{});
+    qwindows_mod.linkSystemLibrary("user32", .{});
+    qwindows_mod.linkSystemLibrary("winmm", .{});
+    qwindows_mod.linkSystemLibrary("winspool", .{});
+    qwindows_mod.linkSystemLibrary("wtsapi32", .{});
+    qwindows_mod.linkSystemLibrary("shcore", .{});
+    qwindows_mod.linkSystemLibrary("comdlg32", .{});
+    qwindows_mod.linkSystemLibrary("d3d9", .{});
+    // runtimeobject only available with MSVC SDK
+    qwindows_mod.linkSystemLibrary("uuid", .{});
+    qwindows_mod.linkSystemLibrary("uxtheme", .{});
+
+    addQtCoreIncludes(qwindows_mod, b);
+    addQtGuiIncludes(qwindows_mod, b);
+    qwindows_mod.addIncludePath(b.path("qtbase/src/plugins/platforms/windows"));
+    qwindows_mod.addIncludePath(b.path("qtbase/src/plugins/platforms/windows/uiautomation"));
+    qwindows_mod.addIncludePath(b.path("qtbase/src/3rdparty/wintab"));
+    qwindows_mod.addIncludePath(b.path("generated/moc_qwindows/include"));
+
+    qwindows_mod.addCSourceFiles(.{ .root = b.path("qtbase/src/plugins/platforms/windows"), .files = extra.qwindows_plugin_sources, .flags = qwindows_cxx_flags });
+
+    const qwindows_lib = b.addLibrary(.{ .name = "qwindows", .linkage = .static, .root_module = qwindows_mod });
+    b.installArtifact(qwindows_lib);
 }
 
 // ============================================================================
@@ -504,6 +771,88 @@ fn addQtCoreIncludes(mod: *std.Build.Module, b: *std.Build) void {
     };
 
     for (corelib_inc_paths) |dir| {
+        mod.addIncludePath(b.path(dir));
+    }
+}
+
+fn addQtGuiIncludes(mod: *std.Build.Module, b: *std.Build) void {
+    mod.addIncludePath(b.path("generated/QtGui"));
+    mod.addIncludePath(b.path("generated/QtGui/private"));
+    const gui_inc_paths = [_][]const u8{
+        "qtbase/src/gui",
+        "qtbase/src/gui/accessible",
+        "qtbase/src/gui/animation",
+        "qtbase/src/gui/image",
+        "qtbase/src/gui/itemmodels",
+        "qtbase/src/gui/kernel",
+        "qtbase/src/gui/math3d",
+        "qtbase/src/gui/opengl",
+        "qtbase/src/gui/painting",
+        "qtbase/src/gui/platform",
+        "qtbase/src/gui/platform/windows",
+        "qtbase/src/gui/rhi",
+        "qtbase/src/gui/text",
+        "qtbase/src/gui/text/freetype",
+        "qtbase/src/gui/text/windows",
+        "qtbase/src/gui/util",
+        "qtbase/src/gui/vulkan",
+        "qtbase/src/3rdparty/harfbuzz-ng/include/harfbuzz",
+        "qtbase/src/3rdparty/freetype/include",
+        "qtbase/src/3rdparty/freetype/include/freetype",
+        "qtbase/src/3rdparty/libpng",
+        "qtbase/src/3rdparty/libjpeg/src",
+        "qtbase/src/3rdparty/md4c",
+        "qtbase/src/3rdparty/D3D12MemoryAllocator",
+        "qtbase/src/3rdparty/VulkanMemoryAllocator",
+        "qt_include/QtGui",
+        "qt_include/QtGui/6.8.3",
+        "qt_include/QtGui/6.8.3/QtGui",
+        "qt_include/QtGui/6.8.3/QtGui/private",
+    };
+    for (gui_inc_paths) |dir| {
+        mod.addIncludePath(b.path(dir));
+    }
+}
+
+fn addQtWidgetsIncludes(mod: *std.Build.Module, b: *std.Build) void {
+    mod.addIncludePath(b.path("generated/QtWidgets"));
+    mod.addIncludePath(b.path("generated/QtWidgets/private"));
+    const widgets_inc_paths = [_][]const u8{
+        "qtbase/src/widgets",
+        "qtbase/src/widgets/accessible",
+        "qtbase/src/widgets/dialogs",
+        "qtbase/src/widgets/effects",
+        "qtbase/src/widgets/graphicsview",
+        "qtbase/src/widgets/itemviews",
+        "qtbase/src/widgets/kernel",
+        "qtbase/src/widgets/styles",
+        "qtbase/src/widgets/util",
+        "qtbase/src/widgets/widgets",
+        "qt_include/QtWidgets",
+        "qt_include/QtWidgets/6.8.3",
+        "qt_include/QtWidgets/6.8.3/QtWidgets",
+        "qt_include/QtWidgets/6.8.3/QtWidgets/private",
+    };
+    for (widgets_inc_paths) |dir| {
+        mod.addIncludePath(b.path(dir));
+    }
+}
+
+fn addQtNetworkIncludes(mod: *std.Build.Module, b: *std.Build) void {
+    mod.addIncludePath(b.path("generated/QtNetwork"));
+    mod.addIncludePath(b.path("generated/QtNetwork/private"));
+    const network_inc_paths = [_][]const u8{
+        "qtbase/src/network",
+        "qtbase/src/network/access",
+        "qtbase/src/network/kernel",
+        "qtbase/src/network/socket",
+        "qtbase/src/network/ssl",
+        "qt_include/QtNetwork",
+        "qt_include/QtNetwork/6.8.3",
+        "qt_include/QtNetwork/6.8.3/QtNetwork",
+        "qt_include/QtNetwork/6.8.3/QtNetwork/private",
+    };
+    for (network_inc_paths) |dir| {
         mod.addIncludePath(b.path(dir));
     }
 }

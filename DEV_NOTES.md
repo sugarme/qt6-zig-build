@@ -2,23 +2,34 @@
 
 ## Overview
 
-This project builds Qt 6.8.3 (QtCore module) as a static library using the Zig build system,
-replacing CMake/Ninja with `build.zig`. It also builds the essential Qt build tools (`moc` and `rcc`)
-from source.
+This project builds Qt 6.8.3 as static libraries using the Zig build system,
+replacing CMake/Ninja with `build.zig`. It builds QtCore, QtGui, QtWidgets, QtNetwork,
+QtConcurrent, the Windows platform plugin (qwindows), and all required 3rd party
+dependencies (HarfBuzz, FreeType, libpng, libjpeg, zlib, PCRE2, double-conversion).
+It also builds the Qt build tools (`moc` and `rcc`) from source.
 
 ## Architecture
 
 ### Build Targets
 
-| Target | Type | Description |
-|--------|------|-------------|
-| `Qt6Core.lib` | Static library | Full QtCore module with all features |
-| `qtBootstrap.lib` | Static library | Minimal QtCore subset for building tools |
-| `qtZlib.lib` | Static library | Bundled zlib 1.3.1 |
-| `qtPcre2.lib` | Static library | Bundled PCRE2 10.45 (16-bit code units) |
-| `qtDoubleConversion.lib` | Static library | Bundled double-conversion 3.3.0 |
-| `moc.exe` | Executable | Qt Meta Object Compiler |
-| `rcc.exe` | Executable | Qt Resource Compiler |
+| Target | Type | Description | Release Size |
+|--------|------|-------------|-------------|
+| `Qt6Core.lib` | Static library | Core non-GUI functionality | 16 MB |
+| `Qt6Gui.lib` | Static library | GUI foundation (painting, fonts, images, RHI) | 20 MB |
+| `Qt6Widgets.lib` | Static library | Desktop widgets (buttons, dialogs, views) | 22 MB |
+| `Qt6Network.lib` | Static library | Networking (HTTP, sockets, DNS) | 7 MB |
+| `Qt6Concurrent.lib` | Static library | Thread pool and parallel execution | 23 KB |
+| `qwindows.lib` | Static library | Windows platform plugin | 2.5 MB |
+| `qtHarfbuzz.lib` | Static library | HarfBuzz text shaping engine | 8.7 MB |
+| `qtFreetype.lib` | Static library | FreeType font rendering | 869 KB |
+| `qtLibpng.lib` | Static library | PNG image codec | 261 KB |
+| `qtLibjpeg.lib` | Static library | JPEG image codec | 440 KB |
+| `qtZlib.lib` | Static library | zlib compression | 104 KB |
+| `qtPcre2.lib` | Static library | PCRE2 regular expressions | 416 KB |
+| `qtDoubleConversion.lib` | Static library | Float/string conversion | 67 KB |
+| `qtBootstrap.lib` | Static library | Minimal QtCore for tools | 4.9 MB |
+| `moc.exe` | Executable | Qt Meta Object Compiler | 2.3 MB |
+| `rcc.exe` | Executable | Qt Resource Compiler | 4.2 MB |
 
 ### Build Order / Dependencies
 
