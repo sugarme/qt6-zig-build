@@ -32,6 +32,7 @@ from source. FFmpeg 7.0.1 source is bundled for the Multimedia FFmpeg backend.
 | `Qt6Charts.lib` | Static library | Charts (line, bar, pie, scatter, etc.) | 97.3 MB |
 | `Qt6Multimedia.lib` | Static library | Audio/video playback, capture, devices | 49.5 MB |
 | `Qt6SpatialAudio.lib` | Static library | 3D spatial audio (Resonance Audio) | 64.6 MB |
+| `Qt6FFmpegMediaPlugin.lib` | Static library | FFmpeg media backend plugin | 41.0 MB |
 | **Platform** | | | |
 | `qwindows.lib` | Static library | Windows platform plugin | 35.6 MB |
 | **3rd Party** | | | |
@@ -46,6 +47,8 @@ from source. FFmpeg 7.0.1 source is bundled for the Multimedia FFmpeg backend.
 | **Tools** | | | |
 | `moc.exe` | Executable | Qt Meta Object Compiler | 13.4 MB |
 | `rcc.exe` | Executable | Qt Resource Compiler | 31.5 MB |
+| `uic.exe` | Executable | Qt User Interface Compiler | 34.7 MB |
+| `syncqt.exe` | Executable | Qt Header Synchronization Tool | 2.9 MB |
 
 ### Build Order / Dependencies
 
@@ -310,11 +313,12 @@ zig build -Doptimize=ReleaseFast
 - [x] Build QtSpatialAudio module (with Resonance Audio + Eigen)
 - [x] Enable OpenGL support in QtGui
 - [x] Bundle FFmpeg 7.0.1 source (Zig build system)
-- [ ] Build FFmpeg plugin for Qt Multimedia
-- [ ] Build UIC tool and generate ui_*.h at build time
-- [ ] Run syncqt from Zig build to generate forwarding headers
+- [x] Build FFmpeg plugin for Qt Multimedia (Qt6FFmpegMediaPlugin)
+- [x] Build UIC tool and generate ui_*.h at build time
+- [x] Build syncqt tool from source
+- [x] Add build options for feature selection (-Dcharts=false, etc.)
+- [ ] Run syncqt at build time to generate forwarding headers (currently pre-generated)
 - [ ] Add cross-compilation support (Linux, macOS targets)
-- [ ] Add build options for feature selection
 
 ## References
 

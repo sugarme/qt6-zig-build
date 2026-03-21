@@ -267,8 +267,7 @@ pub const qtmultimedia_ffmpeg_win_sources: []const []const u8 = &.{
     "qgdiwindowcapture.cpp",
     "qwincapturablewindows.cpp",
     "qwindowscamera.cpp",
-    // QT_FEATURE_cpp_winrt sources
-    "qffmpegwindowcapture_uwp.cpp",
+    // qffmpegwindowcapture_uwp.cpp excluded: requires C++/WinRT (QT_FEATURE_cpp_winrt)
 };
 
 // Windows video devices source (from sibling windows/ plugin directory)

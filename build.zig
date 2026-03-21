@@ -11,6 +11,20 @@ pub fn build(b: *std.Build) void {
     const optimize = b.standardOptimizeOption(.{});
 
     // ========================================================================
+    // Build options for optional modules (core modules always built)
+    // ========================================================================
+
+    const enable_xml = b.option(bool, "xml", "Build Qt6Xml module") orelse true;
+    const enable_sql = b.option(bool, "sql", "Build Qt6Sql module") orelse true;
+    const enable_opengl = b.option(bool, "opengl", "Build Qt6OpenGL module") orelse true;
+    const enable_printsupport = b.option(bool, "printsupport", "Build Qt6PrintSupport module") orelse true;
+    const enable_svg = b.option(bool, "svg", "Build Qt6Svg module") orelse true;
+    const enable_webchannel = b.option(bool, "webchannel", "Build Qt6WebChannel module") orelse true;
+    const enable_charts = b.option(bool, "charts", "Build Qt6Charts module") orelse true;
+    const enable_multimedia = b.option(bool, "multimedia", "Build Qt6Multimedia module") orelse true;
+    const enable_spatialaudio = b.option(bool, "spatialaudio", "Build Qt6SpatialAudio module") orelse true;
+
+    // ========================================================================
     // Common flags
     // ========================================================================
 
@@ -481,6 +495,123 @@ pub fn build(b: *std.Build) void {
     b.installArtifact(rcc_exe);
 
     // ========================================================================
+    // 7b. UIC tool (executable) - links Bootstrap, generates ui_*.h from .ui files
+    // ========================================================================
+
+    const uic_mod = b.createModule(.{
+        .target = target,
+        .optimize = optimize,
+        .link_libc = true,
+    });
+
+    uic_mod.linkSystemLibrary("c++", .{});
+    uic_mod.linkSystemLibrary("advapi32", .{});
+    uic_mod.linkSystemLibrary("kernel32", .{});
+    uic_mod.linkSystemLibrary("netapi32", .{});
+    uic_mod.linkSystemLibrary("ole32", .{});
+    uic_mod.linkSystemLibrary("shell32", .{});
+    uic_mod.linkSystemLibrary("user32", .{});
+    uic_mod.linkSystemLibrary("uuid", .{});
+    uic_mod.linkSystemLibrary("version", .{});
+    uic_mod.linkSystemLibrary("winmm", .{});
+    uic_mod.linkSystemLibrary("ws2_32", .{});
+
+    // UIC include paths must come before QtCore includes to avoid utils.h shadowing
+    uic_mod.addIncludePath(b.path("Qt/6.8.3/qtbase/src/tools/uic"));
+    uic_mod.addIncludePath(b.path("Qt/6.8.3/qtbase/src/tools/uic/cpp"));
+    uic_mod.addIncludePath(b.path("Qt/6.8.3/qtbase/src/tools/uic/python"));
+    uic_mod.addIncludePath(b.path("Qt/6.8.3/qtbase/src/tools/uic/shared"));
+    addQtCoreIncludes(uic_mod, b);
+
+    const uic_flags: []const []const u8 = &.{
+        "-std=c++17",
+        "-w",
+        "-fdelayed-template-parsing",
+        "-DWIN32",
+        "-D_WINDOWS",
+        "-DUNICODE",
+        "-D_UNICODE",
+        "-D_CRT_SECURE_NO_WARNINGS",
+        "-DNOMINMAX",
+        "-DQT_UIC",
+        "-DQT_NO_FOREACH",
+        "-DQT_USE_NODISCARD_FILE_OPEN",
+        "-DQT_NO_CAST_FROM_ASCII",
+        "-DQT_USE_QSTRINGBUILDER",
+        "-DQT_STATIC",
+        "-DQT_NO_DEBUG",
+        "-DQT_FEATURE_cpp_winrt=-1",
+        "-DPCRE2_STATIC",
+        "-DPCRE2_CODE_UNIT_WIDTH=16",
+    };
+
+    uic_mod.addCSourceFiles(.{
+        .root = b.path("Qt/6.8.3/qtbase/src/tools/uic"),
+        .files = sources.uic_tool_sources,
+        .flags = uic_flags,
+    });
+
+    uic_mod.linkLibrary(qtcore_lib);
+    uic_mod.linkLibrary(zlib_lib);
+    uic_mod.linkLibrary(pcre2_lib);
+
+    const uic_exe = b.addExecutable(.{
+        .name = "uic",
+        .root_module = uic_mod,
+    });
+    b.installArtifact(uic_exe);
+
+    // ========================================================================
+    // 7c. Generate UIC outputs from .ui files
+    // ========================================================================
+
+    const uic_output = generateUicOutputs(b, uic_exe, &.{
+        .{ .ui_file = b.path("Qt/6.8.3/qtbase/src/widgets/dialogs/qfiledialog.ui"), .output = "ui_qfiledialog.h" },
+        .{ .ui_file = b.path("Qt/6.8.3/qtbase/src/printsupport/dialogs/qpagesetupwidget.ui"), .output = "ui_qpagesetupwidget.h" },
+        .{ .ui_file = b.path("Qt/6.8.3/qtbase/src/printsupport/dialogs/qprintpropertieswidget.ui"), .output = "ui_qprintpropertieswidget.h" },
+        .{ .ui_file = b.path("Qt/6.8.3/qtbase/src/printsupport/dialogs/qprintsettingsoutput.ui"), .output = "ui_qprintsettingsoutput.h" },
+        .{ .ui_file = b.path("Qt/6.8.3/qtbase/src/printsupport/dialogs/qprintwidget.ui"), .output = "ui_qprintwidget.h" },
+    });
+
+    // ========================================================================
+    // 7d. syncqt tool (executable) - standalone C++17, no Qt dependencies
+    // ========================================================================
+
+    const syncqt_mod = b.createModule(.{
+        .target = target,
+        .optimize = optimize,
+        .link_libc = true,
+    });
+
+    syncqt_mod.linkSystemLibrary("c++", .{});
+
+    syncqt_mod.addCSourceFiles(.{
+        .root = b.path("Qt/6.8.3/qtbase/src/tools/syncqt"),
+        .files = &.{"main.cpp"},
+        .flags = &.{
+            "-std=c++17",
+            "-w",
+            "-fexceptions",
+            "-DWIN32",
+            "-D_WINDOWS",
+            "-DUNICODE",
+            "-D_UNICODE",
+            "-D_CRT_SECURE_NO_WARNINGS",
+            "-DNOMINMAX",
+            "-DQT_VERSION_STR=\"6.8.3\"",
+            "-DQT_VERSION_MAJOR=6",
+            "-DQT_VERSION_MINOR=8",
+            "-DQT_VERSION_PATCH=3",
+        },
+    });
+
+    const syncqt_exe = b.addExecutable(.{
+        .name = "syncqt",
+        .root_module = syncqt_mod,
+    });
+    b.installArtifact(syncqt_exe);
+
+    // ========================================================================
     // 8. HarfBuzz (static library)
     // ========================================================================
 
@@ -703,7 +834,7 @@ pub fn build(b: *std.Build) void {
     addQtGuiIncludes(qtwidgets_mod, b);
     addQtWidgetsIncludes(qtwidgets_mod, b);
     qtwidgets_mod.addIncludePath(qtwidgets_moc.include_dir);
-    qtwidgets_mod.addIncludePath(b.path("generated/uic"));
+    qtwidgets_mod.addIncludePath(uic_output); // build-time UIC output
 
     qtwidgets_mod.addCSourceFiles(.{ .root = b.path("Qt/6.8.3/qtbase/src/widgets"), .files = extra.qtwidgets_common_sources, .flags = qt_widgets_cxx_flags });
     qtwidgets_mod.addCSourceFiles(.{ .root = b.path("Qt/6.8.3/qtbase/src/widgets"), .files = extra.qtwidgets_win_sources, .flags = qt_widgets_cxx_flags });
@@ -885,6 +1016,7 @@ pub fn build(b: *std.Build) void {
     // ========================================================================
     // 17. Qt6Xml (static library)
     // ========================================================================
+    if (enable_xml) {
 
     const qt_xml_cxx_flags: []const []const u8 = &.{
         "-std=c++17", "-w", "-fdelayed-template-parsing",
@@ -908,10 +1040,12 @@ pub fn build(b: *std.Build) void {
 
     const qtxml_lib = b.addLibrary(.{ .name = "Qt6Xml", .linkage = .static, .root_module = qtxml_mod });
     b.installArtifact(qtxml_lib);
+    }
 
     // ========================================================================
     // 18. Qt6Sql (static library)
     // ========================================================================
+    if (enable_sql) {
 
     const qt_sql_cxx_flags: []const []const u8 = &.{
         "-std=c++17", "-w", "-fdelayed-template-parsing",
@@ -957,10 +1091,12 @@ pub fn build(b: *std.Build) void {
 
     const qtsql_lib = b.addLibrary(.{ .name = "Qt6Sql", .linkage = .static, .root_module = qtsql_mod });
     b.installArtifact(qtsql_lib);
+    }
 
     // ========================================================================
     // 19. Qt6OpenGL (static library)
     // ========================================================================
+    if (enable_opengl) {
 
     const qt_opengl_cxx_flags: []const []const u8 = &.{
         "-std=c++17", "-w", "-fdelayed-template-parsing",
@@ -1014,10 +1150,12 @@ pub fn build(b: *std.Build) void {
 
     const qtopengl_lib = b.addLibrary(.{ .name = "Qt6OpenGL", .linkage = .static, .root_module = qtopengl_mod });
     b.installArtifact(qtopengl_lib);
+    }
 
     // ========================================================================
     // 20. Qt6PrintSupport (static library)
     // ========================================================================
+    if (enable_printsupport) {
 
     const qt_printsupport_cxx_flags: []const []const u8 = &.{
         "-std=c++17", "-w", "-fdelayed-template-parsing",
@@ -1042,6 +1180,7 @@ pub fn build(b: *std.Build) void {
     addQtGuiIncludes(qtprintsupport_mod, b);
     addQtWidgetsIncludes(qtprintsupport_mod, b);
     addQtPrintSupportIncludes(qtprintsupport_mod, b);
+    qtprintsupport_mod.addIncludePath(uic_output); // build-time UIC output for print dialogs
 
     // Generate MOC outputs for QtPrintSupport
     const qtprintsupport_moc_includes: []const std.Build.LazyPath = &.{
@@ -1083,10 +1222,12 @@ pub fn build(b: *std.Build) void {
 
     const qtprintsupport_lib = b.addLibrary(.{ .name = "Qt6PrintSupport", .linkage = .static, .root_module = qtprintsupport_mod });
     b.installArtifact(qtprintsupport_lib);
+    }
 
     // ========================================================================
     // 21. Qt6Svg (static library)
     // ========================================================================
+    if (enable_svg) {
 
     const qt_svg_cxx_flags: []const []const u8 = &.{
         "-std=c++17", "-w", "-fdelayed-template-parsing",
@@ -1181,10 +1322,12 @@ pub fn build(b: *std.Build) void {
 
     const qtsvgwidgets_lib = b.addLibrary(.{ .name = "Qt6SvgWidgets", .linkage = .static, .root_module = qtsvgwidgets_mod });
     b.installArtifact(qtsvgwidgets_lib);
+    }
 
     // ========================================================================
     // 23. Qt6WebChannel (static library)
     // ========================================================================
+    if (enable_webchannel) {
 
     const qt_webchannel_cxx_flags: []const []const u8 = &.{
         "-std=c++17", "-w", "-fdelayed-template-parsing",
@@ -1228,10 +1371,12 @@ pub fn build(b: *std.Build) void {
 
     const qtwebchannel_lib = b.addLibrary(.{ .name = "Qt6WebChannel", .linkage = .static, .root_module = qtwebchannel_mod });
     b.installArtifact(qtwebchannel_lib);
+    }
 
     // ========================================================================
     // 24. Qt6Charts (static library)
     // ========================================================================
+    if (enable_charts) {
 
     const qt_charts_cxx_flags: []const []const u8 = &.{
         "-std=c++17", "-w", "-fdelayed-template-parsing",
@@ -1306,10 +1451,12 @@ pub fn build(b: *std.Build) void {
 
     const qtcharts_lib = b.addLibrary(.{ .name = "Qt6Charts", .linkage = .static, .root_module = qtcharts_mod });
     b.installArtifact(qtcharts_lib);
+    }
 
     // ========================================================================
     // 25. Qt6Multimedia (static library)
     // ========================================================================
+    if (enable_multimedia) {
 
     const qt_multimedia_cxx_flags: []const []const u8 = &.{
         "-std=c++17", "-w", "-fdelayed-template-parsing",
@@ -1388,10 +1535,12 @@ pub fn build(b: *std.Build) void {
 
     const qtmultimedia_lib = b.addLibrary(.{ .name = "Qt6Multimedia", .linkage = .static, .root_module = qtmultimedia_mod });
     b.installArtifact(qtmultimedia_lib);
+    }
 
     // ========================================================================
     // 26. Qt6SpatialAudio (static library)
     // ========================================================================
+    if (enable_spatialaudio) {
 
     const qt_spatialaudio_cxx_flags: []const []const u8 = &.{
         "-std=c++17", "-w", "-fdelayed-template-parsing",
@@ -1467,6 +1616,109 @@ pub fn build(b: *std.Build) void {
 
     const qtspatialaudio_lib = b.addLibrary(.{ .name = "Qt6SpatialAudio", .linkage = .static, .root_module = qtspatialaudio_mod });
     b.installArtifact(qtspatialaudio_lib);
+    }
+
+    // ========================================================================
+    // 27. Qt6FFmpegMediaPlugin (static library - FFmpeg backend for Multimedia)
+    // ========================================================================
+
+    if (enable_multimedia) {
+    const qt_ffmpeg_plugin_cxx_flags: []const []const u8 = &.{
+        "-std=c++17", "-w", "-fdelayed-template-parsing",
+        "-DWIN32", "-D_WINDOWS", "-DUNICODE", "-D_UNICODE",
+        "-D_CRT_SECURE_NO_WARNINGS", "-D_CRT_NONSTDC_NO_WARNINGS",
+        "-DNOMINMAX", "-D_ENABLE_EXTENDED_ALIGNED_STORAGE",
+        "-DQT_NO_FOREACH", "-DQT_NO_USING_NAMESPACE",
+        "-DQT_USE_NODISCARD_FILE_OPEN", "-DQT_STATIC",
+        "-DQT_BUILD_MULTIMEDIA_LIB", "-DQT_NO_DEBUG",
+        "-DQT_USE_QSTRINGBUILDER",
+        "-DQT_FEATURE_cpp_winrt=-1",
+        "-DPCRE2_STATIC", "-DPCRE2_CODE_UNIT_WIDTH=16",
+    };
+
+    const ffmpeg_dep = b.dependency("ffmpeg", .{
+        .target = target,
+        .optimize = optimize,
+    });
+    const ffmpeg_lib = ffmpeg_dep.artifact("ffmpeg");
+
+    const qtffmpeg_mod = b.createModule(.{ .target = target, .optimize = optimize, .link_libc = true });
+    qtffmpeg_mod.linkSystemLibrary("c++", .{});
+    qtffmpeg_mod.linkSystemLibrary("ole32", .{});
+    qtffmpeg_mod.linkSystemLibrary("oleaut32", .{});
+    qtffmpeg_mod.linkSystemLibrary("uuid", .{});
+    qtffmpeg_mod.linkSystemLibrary("mf", .{});
+    qtffmpeg_mod.linkSystemLibrary("mfplat", .{});
+    qtffmpeg_mod.linkSystemLibrary("mfreadwrite", .{});
+    qtffmpeg_mod.linkSystemLibrary("mfuuid", .{});
+    qtffmpeg_mod.linkSystemLibrary("strmiids", .{});
+    qtffmpeg_mod.linkSystemLibrary("d3d11", .{});
+    qtffmpeg_mod.linkSystemLibrary("dxgi", .{});
+    qtffmpeg_mod.linkSystemLibrary("dxguid", .{});
+    qtffmpeg_mod.linkSystemLibrary("dwmapi", .{});
+    qtffmpeg_mod.linkSystemLibrary("dxva2", .{});
+    qtffmpeg_mod.linkSystemLibrary("user32", .{});
+    qtffmpeg_mod.linkSystemLibrary("gdi32", .{});
+
+    addQtCoreIncludes(qtffmpeg_mod, b);
+    addQtGuiIncludes(qtffmpeg_mod, b);
+    addQtMultimediaIncludes(qtffmpeg_mod, b);
+    // FFmpeg headers
+    qtffmpeg_mod.linkLibrary(ffmpeg_lib);
+    // Windows sibling plugin include
+    qtffmpeg_mod.addIncludePath(b.path("Qt/6.8.3/qtmultimedia/src/plugins/multimedia/windows"));
+    qtffmpeg_mod.addIncludePath(b.path("Qt/6.8.3/qtmultimedia/src/plugins/multimedia/ffmpeg"));
+    // QtFFmpegMediaPluginImpl forwarding headers
+    qtffmpeg_mod.addIncludePath(b.path("Qt/6.8.3/include/QtFFmpegMediaPluginImpl"));
+    qtffmpeg_mod.addIncludePath(b.path("Qt/6.8.3/include/QtFFmpegMediaPluginImpl/6.8.3"));
+    qtffmpeg_mod.addIncludePath(b.path("Qt/6.8.3/include/QtFFmpegMediaPluginImpl/6.8.3/QtFFmpegMediaPluginImpl"));
+    qtffmpeg_mod.addIncludePath(b.path("Qt/6.8.3/include/QtFFmpegMediaPluginImpl/6.8.3/QtFFmpegMediaPluginImpl/private"));
+
+    // Generate MOC outputs for FFmpeg plugin
+    const qtffmpeg_moc_includes: []const std.Build.LazyPath = &.{
+        b.path("generated/QtCore"),
+        b.path("generated/QtCore/private"),
+        b.path("generated/QtGui"),
+        b.path("generated/QtGui/private"),
+        b.path("generated/QtMultimedia"),
+        b.path("generated/QtMultimedia/private"),
+        b.path("Qt/6.8.3/include"),
+        b.path("Qt/6.8.3/include/QtCore"),
+        b.path("Qt/6.8.3/include/QtCore/6.8.3"),
+        b.path("Qt/6.8.3/include/QtCore/6.8.3/QtCore"),
+        b.path("Qt/6.8.3/include/QtCore/6.8.3/QtCore/private"),
+        b.path("Qt/6.8.3/include/QtGui"),
+        b.path("Qt/6.8.3/include/QtGui/6.8.3"),
+        b.path("Qt/6.8.3/include/QtGui/6.8.3/QtGui"),
+        b.path("Qt/6.8.3/include/QtGui/6.8.3/QtGui/private"),
+        b.path("Qt/6.8.3/include/QtMultimedia"),
+        b.path("Qt/6.8.3/include/QtMultimedia/6.8.3"),
+        b.path("Qt/6.8.3/include/QtMultimedia/6.8.3/QtMultimedia"),
+        b.path("Qt/6.8.3/include/QtMultimedia/6.8.3/QtMultimedia/private"),
+        b.path("Qt/6.8.3/qtmultimedia/src/multimedia"),
+        b.path("Qt/6.8.3/qtmultimedia/src/multimedia/audio"),
+        b.path("Qt/6.8.3/qtmultimedia/src/multimedia/video"),
+        b.path("Qt/6.8.3/qtmultimedia/src/multimedia/platform"),
+        b.path("Qt/6.8.3/qtmultimedia/src/multimedia/recording"),
+        b.path("Qt/6.8.3/qtmultimedia/src/multimedia/playback"),
+        b.path("Qt/6.8.3/qtmultimedia/src/plugins/multimedia/ffmpeg"),
+        b.path("Qt/6.8.3/qtmultimedia/src/plugins/multimedia/windows"),
+        b.path("Qt/6.8.3/qtbase/mkspecs/win32-g++"),
+    };
+    const qtffmpeg_moc = generateMocOutputs(b, moc_exe, b.path("Qt/6.8.3/qtmultimedia/src/plugins/multimedia/ffmpeg"), multimedia.qtmultimedia_ffmpeg_common_moc_headers, multimedia.qtmultimedia_ffmpeg_moc_sources, &.{}, &.{}, qtffmpeg_moc_includes);
+    qtffmpeg_mod.addIncludePath(qtffmpeg_moc.include_dir);
+
+    // Windows-specific MOC
+    const qtffmpeg_win_moc = generateMocOutputs(b, moc_exe, b.path("Qt/6.8.3/qtmultimedia/src/plugins/multimedia/ffmpeg"), multimedia.qtmultimedia_ffmpeg_win_moc_headers, &.{}, &.{}, &.{}, qtffmpeg_moc_includes);
+    qtffmpeg_mod.addIncludePath(qtffmpeg_win_moc.include_dir);
+
+    qtffmpeg_mod.addCSourceFiles(.{ .root = b.path("Qt/6.8.3/qtmultimedia/src/plugins/multimedia/ffmpeg"), .files = multimedia.qtmultimedia_ffmpeg_common_sources, .flags = qt_ffmpeg_plugin_cxx_flags });
+    qtffmpeg_mod.addCSourceFiles(.{ .root = b.path("Qt/6.8.3/qtmultimedia/src/plugins/multimedia/ffmpeg"), .files = multimedia.qtmultimedia_ffmpeg_win_sources, .flags = qt_ffmpeg_plugin_cxx_flags });
+    qtffmpeg_mod.addCSourceFiles(.{ .root = b.path("Qt/6.8.3/qtmultimedia/src/plugins/multimedia/windows"), .files = multimedia.qtmultimedia_ffmpeg_win_sibling_sources, .flags = qt_ffmpeg_plugin_cxx_flags });
+
+    const qtffmpeg_lib = b.addLibrary(.{ .name = "Qt6FFmpegMediaPlugin", .linkage = .static, .root_module = qtffmpeg_mod });
+    b.installArtifact(qtffmpeg_lib);
+    }
 }
 
 // ============================================================================
@@ -1568,6 +1820,33 @@ fn generateMocOutputs(
         .include_dir = wf.getDirectory(),
         .standalone_files = standalone_list.toOwnedSlice(b.allocator) catch @panic("OOM"),
     };
+}
+
+// ============================================================================
+// Helper: Generate UIC outputs by running uic.exe on .ui files
+// ============================================================================
+
+const UicInput = struct {
+    ui_file: std.Build.LazyPath,
+    output: []const u8,
+};
+
+fn generateUicOutputs(
+    b: *std.Build,
+    uic_exe_compile: *std.Build.Step.Compile,
+    ui_files: []const UicInput,
+) std.Build.LazyPath {
+    const wf = b.addWriteFiles();
+
+    for (ui_files) |entry| {
+        const run = b.addRunArtifact(uic_exe_compile);
+        run.addFileArg(entry.ui_file);
+        run.addArg("-o");
+        const output = run.addOutputFileArg(entry.output);
+        _ = wf.addCopyFile(output, entry.output);
+    }
+
+    return wf.getDirectory();
 }
 
 // ============================================================================

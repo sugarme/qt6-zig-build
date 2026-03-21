@@ -22,6 +22,7 @@ Build Qt 6.8.3 as static libraries using the Zig build system, replacing CMake/N
 | `Qt6Charts.lib` | Charts (line, bar, pie, scatter, etc.) | 97.3 MB |
 | `Qt6Multimedia.lib` | Audio/video playback, capture, devices | 49.5 MB |
 | `Qt6SpatialAudio.lib` | 3D spatial audio (Resonance Audio) | 64.6 MB |
+| `Qt6FFmpegMediaPlugin.lib` | FFmpeg media backend plugin | 41.0 MB |
 | **Platform** | | |
 | `qwindows.lib` | Windows platform plugin (static) | 35.6 MB |
 | **3rd Party** | | |
@@ -36,6 +37,8 @@ Build Qt 6.8.3 as static libraries using the Zig build system, replacing CMake/N
 | **Tools** | | |
 | `moc.exe` | Qt Meta Object Compiler | 13.4 MB |
 | `rcc.exe` | Qt Resource Compiler | 31.5 MB |
+| `uic.exe` | Qt User Interface Compiler | 34.7 MB |
+| `syncqt.exe` | Qt Header Synchronization Tool | 2.9 MB |
 
 ## Prerequisites
 
@@ -106,6 +109,20 @@ zig build -Doptimize=ReleaseFast
 # Release with safety checks
 zig build -Doptimize=ReleaseSafe
 ```
+
+## Build Options
+
+Optional modules can be disabled to speed up builds:
+```bash
+# Disable specific modules
+zig build -Dcharts=false -Dspatialaudio=false
+
+# Available options (all default to true):
+#   -Dxml, -Dsql, -Dopengl, -Dprintsupport, -Dsvg
+#   -Dwebchannel, -Dcharts, -Dmultimedia, -Dspatialaudio
+```
+
+Core modules (Core, Gui, Widgets, Network, Concurrent) are always built.
 
 ## Output
 
@@ -205,7 +222,7 @@ Currently targets **Windows x86_64** only. The build uses:
 | SVG rendering | Enabled |
 | Charts (line, bar, pie, etc.) | Enabled |
 | Multimedia (audio/video, WMF backend) | Enabled |
-| FFmpeg media backend (bundled 7.0.1) | Available |
+| FFmpeg media backend (bundled 7.0.1) | Enabled |
 | Spatial Audio (Resonance Audio) | Enabled |
 | SQL database abstraction | Enabled |
 | Print support + dialogs | Enabled |

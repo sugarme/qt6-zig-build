@@ -474,6 +474,28 @@ pub const rcc_tool_sources: []const []const u8 = &.{
 };
 
 // ============================================================================
+// UIC tool sources
+// ============================================================================
+
+pub const uic_tool_sources: []const []const u8 = &.{
+    "cpp/cppwritedeclaration.cpp",
+    "cpp/cppwriteincludes.cpp",
+    "cpp/cppwriteinitialization.cpp",
+    "customwidgetsinfo.cpp",
+    "databaseinfo.cpp",
+    "driver.cpp",
+    "main.cpp",
+    "python/pythonwritedeclaration.cpp",
+    "python/pythonwriteimports.cpp",
+    "shared/language.cpp",
+    "shared/writeincludesbase.cpp",
+    "treewalker.cpp",
+    "ui4.cpp",
+    "uic.cpp",
+    "validator.cpp",
+};
+
+// ============================================================================
 // MOC-generated sources for QtCore
 // ============================================================================
 
