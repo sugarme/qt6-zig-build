@@ -4,24 +4,24 @@ Build Qt 6.8.3 as static libraries using the Zig build system, replacing CMake/N
 
 ## What's Built
 
-| Library | Description | Release Size |
-|---------|-------------|-------------|
-| `Qt6Core.lib` | Core non-GUI functionality | 16 MB |
-| `Qt6Gui.lib` | GUI foundation (painting, fonts, images, RHI) | 20 MB |
-| `Qt6Widgets.lib` | Desktop widgets (buttons, dialogs, views) | 22 MB |
-| `Qt6Network.lib` | Networking (HTTP, sockets, SSL base) | 7 MB |
-| `Qt6Concurrent.lib` | Thread pool and parallel execution | 23 KB |
-| `qwindows.lib` | Windows platform plugin (static) | 2.5 MB |
-| `qtHarfbuzz.lib` | Text shaping engine | 8.7 MB |
-| `qtFreetype.lib` | Font rendering | 869 KB |
-| `qtLibpng.lib` | PNG codec | 261 KB |
-| `qtLibjpeg.lib` | JPEG codec | 440 KB |
-| `qtZlib.lib` | Compression | 104 KB |
-| `qtPcre2.lib` | Regular expressions | 416 KB |
-| `qtDoubleConversion.lib` | Float/string conversion | 67 KB |
-| `qtBootstrap.lib` | Minimal QtCore for tools | 4.9 MB |
-| `moc.exe` | Qt Meta Object Compiler | 2.3 MB |
-| `rcc.exe` | Qt Resource Compiler | 4.2 MB |
+| Library | Description | Debug Size |
+|---------|-------------|------------|
+| `Qt6Core.lib` | Core non-GUI functionality | 188 MB |
+| `Qt6Gui.lib` | GUI foundation (painting, fonts, images, RHI) | 242 MB |
+| `Qt6Widgets.lib` | Desktop widgets (buttons, dialogs, views) | 234 MB |
+| `Qt6Network.lib` | Networking (HTTP, sockets, SSL base) | 85 MB |
+| `Qt6Concurrent.lib` | Thread pool and parallel execution | 257 KB |
+| `qwindows.lib` | Windows platform plugin (static) | 33.5 MB |
+| `qtHarfbuzz.lib` | Text shaping engine | 127 MB |
+| `qtFreetype.lib` | Font rendering | 13.4 MB |
+| `qtLibpng.lib` | PNG codec | 3.0 MB |
+| `qtLibjpeg.lib` | JPEG codec | 8.9 MB |
+| `qtZlib.lib` | Compression | 1.6 MB |
+| `qtPcre2.lib` | Regular expressions | 4.0 MB |
+| `qtDoubleConversion.lib` | Float/string conversion | 843 KB |
+| `qtBootstrap.lib` | Minimal QtCore for tools | 54.5 MB |
+| `moc.exe` | Qt Meta Object Compiler | 12.8 MB |
+| `rcc.exe` | Qt Resource Compiler | 30.0 MB |
 
 ## Prerequisites
 
