@@ -4,30 +4,46 @@ Build Qt 6.8.3 as static libraries using the Zig build system, replacing CMake/N
 
 ## What's Built
 
-| Library | Description | Debug Size |
-|---------|-------------|------------|
-| `Qt6Core.lib` | Core non-GUI functionality | 188 MB |
-| `Qt6Gui.lib` | GUI foundation (painting, fonts, images, RHI) | 242 MB |
-| `Qt6Widgets.lib` | Desktop widgets (buttons, dialogs, views) | 234 MB |
-| `Qt6Network.lib` | Networking (HTTP, sockets, SSL base) | 85 MB |
-| `Qt6Concurrent.lib` | Thread pool and parallel execution | 257 KB |
-| `qwindows.lib` | Windows platform plugin (static) | 33.5 MB |
-| `qtHarfbuzz.lib` | Text shaping engine | 127 MB |
-| `qtFreetype.lib` | Font rendering | 13.4 MB |
-| `qtLibpng.lib` | PNG codec | 3.0 MB |
-| `qtLibjpeg.lib` | JPEG codec | 8.9 MB |
-| `qtZlib.lib` | Compression | 1.6 MB |
-| `qtPcre2.lib` | Regular expressions | 4.0 MB |
-| `qtDoubleConversion.lib` | Float/string conversion | 843 KB |
-| `qtBootstrap.lib` | Minimal QtCore for tools | 54.5 MB |
-| `moc.exe` | Qt Meta Object Compiler | 12.8 MB |
-| `rcc.exe` | Qt Resource Compiler | 30.0 MB |
+| Library | Description |
+|---------|-------------|
+| **Qt Modules** | |
+| `Qt6Core.lib` | Core non-GUI functionality |
+| `Qt6Gui.lib` | GUI foundation (painting, fonts, images, RHI) |
+| `Qt6Widgets.lib` | Desktop widgets (buttons, dialogs, views) |
+| `Qt6Network.lib` | Networking (HTTP, sockets, SSL base) |
+| `Qt6Concurrent.lib` | Thread pool and parallel execution |
+| `Qt6Xml.lib` | XML DOM parser |
+| `Qt6Sql.lib` | SQL database abstraction + models |
+| `Qt6OpenGL.lib` | OpenGL wrappers and paint engine |
+| `Qt6PrintSupport.lib` | Printing, print dialogs, print preview |
+| `Qt6Svg.lib` | SVG rendering |
+| `Qt6SvgWidgets.lib` | SVG widget integration |
+| `Qt6WebChannel.lib` | WebChannel for Qt/web bridge |
+| `Qt6Charts.lib` | Charts (line, bar, pie, scatter, etc.) |
+| `Qt6Multimedia.lib` | Audio/video playback, capture, devices |
+| `Qt6SpatialAudio.lib` | 3D spatial audio (Resonance Audio) |
+| **Platform** | |
+| `qwindows.lib` | Windows platform plugin (static) |
+| **3rd Party** | |
+| `qtHarfbuzz.lib` | Text shaping engine |
+| `qtFreetype.lib` | Font rendering |
+| `qtLibpng.lib` | PNG codec |
+| `qtLibjpeg.lib` | JPEG codec |
+| `qtZlib.lib` | Compression |
+| `qtPcre2.lib` | Regular expressions |
+| `qtDoubleConversion.lib` | Float/string conversion |
+| `qtBootstrap.lib` | Minimal QtCore for tools |
+| **Tools** | |
+| `moc.exe` | Qt Meta Object Compiler |
+| `rcc.exe` | Qt Resource Compiler |
 
 ## Prerequisites
 
 - **Zig** 0.14.0+ (tested with 0.16.0-dev) - [ziglang.org](https://ziglang.org/download/)
 
 No external Qt installation is required. All necessary Qt 6.8.3 source code and headers are bundled in the repository under `Qt/6.8.3/`.
+
+FFmpeg 7.0.1 source (with Zig build system) is bundled under `ffmpeg/` for the Qt Multimedia FFmpeg backend.
 
 ## Project Structure
 
@@ -37,22 +53,27 @@ qt6-zig-build/
 ├── build.zig.zon             # Package manifest
 ├── source_lists.zig          # QtCore source file arrays
 ├── source_lists_extra.zig    # QtGui/Widgets/Network/etc source arrays
+├── source_lists_modules.zig  # XML/SQL/OpenGL/PrintSupport/SVG/WebChannel sources
+├── source_lists_charts.zig   # QtCharts source arrays
+├── source_lists_multimedia.zig # Multimedia/SpatialAudio/FFmpeg sources
 ├── moc_headers.zig           # MOC header/source lists per module
 ├── Qt/6.8.3/                 # Bundled Qt 6.8.3 source (self-contained)
 │   ├── include/              # syncqt-generated forwarding headers
-│   │   ├── QtCore/
-│   │   ├── QtGui/
-│   │   ├── QtWidgets/
-│   │   ├── QtNetwork/
-│   │   └── QtConcurrent/
-│   └── qtbase/
-│       ├── src/              # Qt source code (corelib, gui, widgets, etc.)
-│       └── mkspecs/          # Platform specifications (win32-g++)
+│   │   ├── QtCore/, QtGui/, QtWidgets/, QtNetwork/, QtConcurrent/
+│   │   ├── QtXml/, QtSql/, QtOpenGL/, QtPrintSupport/
+│   │   ├── QtSvg/, QtSvgWidgets/, QtWebChannel/, QtCharts/
+│   │   └── QtMultimedia/, QtSpatialAudio/
+│   ├── qtbase/
+│   │   ├── src/              # Qt source (corelib, gui, widgets, network, etc.)
+│   │   └── mkspecs/          # Platform specifications (win32-g++)
+│   ├── qtsvg/src/            # SVG module source
+│   ├── qtcharts/src/         # Charts module source
+│   ├── qtwebchannel/src/     # WebChannel module source
+│   └── qtmultimedia/src/     # Multimedia + SpatialAudio source
+├── ffmpeg/                   # FFmpeg 7.0.1 source (Zig build system)
 ├── generated/
-│   ├── QtCore/               # Config headers (qconfig.h, etc.)
-│   ├── QtGui/                # QtGui config headers
-│   ├── QtWidgets/            # QtWidgets config headers
-│   ├── QtNetwork/            # QtNetwork config headers
+│   ├── Qt{Core,Gui,Widgets,Network}/  # Config headers
+│   ├── Qt{Xml,Sql,OpenGL,PrintSupport,Charts,Multimedia}/ # Module configs
 │   ├── uic/                  # Pre-generated UIC form headers
 │   ├── rcc/                  # RCC-generated resources
 │   └── moc_parser_patched.cpp # Clang compatibility patch
@@ -92,19 +113,14 @@ Build artifacts are placed in `zig-out/`:
 ```
 zig-out/
 ├── lib/
-│   ├── Qt6Core.lib
-│   ├── Qt6Gui.lib
-│   ├── Qt6Widgets.lib
-│   ├── Qt6Network.lib
-│   ├── Qt6Concurrent.lib
+│   ├── Qt6Core.lib, Qt6Gui.lib, Qt6Widgets.lib, Qt6Network.lib
+│   ├── Qt6Concurrent.lib, Qt6Xml.lib, Qt6Sql.lib, Qt6OpenGL.lib
+│   ├── Qt6PrintSupport.lib, Qt6Svg.lib, Qt6SvgWidgets.lib
+│   ├── Qt6WebChannel.lib, Qt6Charts.lib
+│   ├── Qt6Multimedia.lib, Qt6SpatialAudio.lib
 │   ├── qwindows.lib
-│   ├── qtHarfbuzz.lib
-│   ├── qtFreetype.lib
-│   ├── qtLibpng.lib
-│   ├── qtLibjpeg.lib
-│   ├── qtZlib.lib
-│   ├── qtPcre2.lib
-│   ├── qtDoubleConversion.lib
+│   ├── qtHarfbuzz.lib, qtFreetype.lib, qtLibpng.lib, qtLibjpeg.lib
+│   ├── qtZlib.lib, qtPcre2.lib, qtDoubleConversion.lib
 │   └── qtBootstrap.lib
 └── bin/
     ├── moc.exe
@@ -128,11 +144,24 @@ const qt_dep = b.dependency("qt6_static", .{
     .target = target,
     .optimize = optimize,
 });
+// Core modules
 exe.linkLibrary(qt_dep.artifact("Qt6Core"));
 exe.linkLibrary(qt_dep.artifact("Qt6Gui"));
 exe.linkLibrary(qt_dep.artifact("Qt6Widgets"));
 exe.linkLibrary(qt_dep.artifact("qwindows"));
-// ... link 3rd party libs
+// Optional modules (link as needed)
+exe.linkLibrary(qt_dep.artifact("Qt6Network"));
+exe.linkLibrary(qt_dep.artifact("Qt6Xml"));
+exe.linkLibrary(qt_dep.artifact("Qt6Sql"));
+exe.linkLibrary(qt_dep.artifact("Qt6OpenGL"));
+exe.linkLibrary(qt_dep.artifact("Qt6PrintSupport"));
+exe.linkLibrary(qt_dep.artifact("Qt6Svg"));
+exe.linkLibrary(qt_dep.artifact("Qt6SvgWidgets"));
+exe.linkLibrary(qt_dep.artifact("Qt6WebChannel"));
+exe.linkLibrary(qt_dep.artifact("Qt6Charts"));
+exe.linkLibrary(qt_dep.artifact("Qt6Multimedia"));
+exe.linkLibrary(qt_dep.artifact("Qt6SpatialAudio"));
+// 3rd party libs
 exe.linkLibrary(qt_dep.artifact("qtHarfbuzz"));
 exe.linkLibrary(qt_dep.artifact("qtFreetype"));
 exe.linkLibrary(qt_dep.artifact("qtLibpng"));
@@ -153,7 +182,8 @@ Currently targets **Windows x86_64** only. The build uses:
 - DirectWrite for font rendering
 - Direct3D 11/12 for RHI backend
 - Windows UI Automation for accessibility
-- No OpenGL, Vulkan, or D-Bus support
+- OpenGL (desktop, dynamic GL)
+- No Vulkan or D-Bus support
 
 ## Enabled Features
 
@@ -171,7 +201,15 @@ Currently targets **Windows x86_64** only. The build uses:
 | PDF output | Enabled |
 | File system model | Enabled |
 | Markdown reader/writer | Enabled |
-| OpenGL | Disabled |
+| OpenGL (desktop, dynamic GL) | Enabled |
+| SVG rendering | Enabled |
+| Charts (line, bar, pie, etc.) | Enabled |
+| Multimedia (audio/video, WMF backend) | Enabled |
+| FFmpeg media backend (bundled 7.0.1) | Available |
+| Spatial Audio (Resonance Audio) | Enabled |
+| SQL database abstraction | Enabled |
+| Print support + dialogs | Enabled |
+| WebChannel | Enabled |
 | Vulkan | Disabled |
 | D-Bus | Disabled |
 | SSL/TLS | Disabled (no OpenSSL) |

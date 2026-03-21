@@ -1,0 +1,3 @@
+#include "qpieseries.h"
+#include <QtCore/qabstractitemmodel.h>
+#include "qvpiemodelmapper.h" // IWYU pragma: export

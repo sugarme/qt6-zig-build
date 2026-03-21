@@ -1,0 +1,3 @@
+#include "qabstractbarseries.h"
+#include <QtCore/qabstractitemmodel.h>
+#include "qhbarmodelmapper.h" // IWYU pragma: export

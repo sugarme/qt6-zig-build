@@ -125,6 +125,7 @@ pub const qtgui_moc_headers: []const []const u8 = &.{
     "kernel/qkeymapper_p.h",
     "kernel/qkeysequence.h",
     "kernel/qoffscreensurface.h",
+    "kernel/qopenglcontext.h",
     "kernel/qpaintdevicewindow.h",
     "kernel/qpalette.h",
     "kernel/qplatformdialoghelper.h",
@@ -178,9 +179,9 @@ pub const qtgui_moc_sources: []const []const u8 = &.{
     "image/qpixmapcache.cpp",
 };
 
-// Empty file stubs: headers that need an empty moc output (e.g., OpenGL disabled)
+// Empty file stubs: headers that need an empty moc output
 pub const qtgui_moc_empty: []const []const u8 = &.{
-    "moc_qopenglcontext.cpp",
+    // OpenGL is now enabled - no empty stubs needed
 };
 
 // ============================================================================

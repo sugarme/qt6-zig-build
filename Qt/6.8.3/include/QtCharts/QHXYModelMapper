@@ -1,0 +1,3 @@
+#include "qxyseries.h"
+#include <QtCore/qabstractitemmodel.h>
+#include "qhxymodelmapper.h" // IWYU pragma: export

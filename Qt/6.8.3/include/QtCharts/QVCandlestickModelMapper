@@ -1,0 +1,3 @@
+#include "qcandlestickseries.h"
+#include <QtCore/qabstractitemmodel.h>
+#include "qvcandlestickmodelmapper.h" // IWYU pragma: export

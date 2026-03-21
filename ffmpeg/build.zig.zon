@@ -1,0 +1,70 @@
+.{
+    .name = .ffmpeg,
+    .version = "7.0.1-9",
+    .fingerprint = 0x2ffce39e03d03ecd,
+    .minimum_zig_version = "0.16.0-dev.2267+27e8d05ee",
+
+    .dependencies = .{
+        .libz = .{
+            .url = "https://github.com/allyourcodebase/zlib/archive/c5115f4b69ef660f72a835c6638f80508ef284c7.tar.gz",
+            .hash = "zlib-1.3.1-1-ZZQ7ldENAAA7qJjUXP6E6xnRuV-jDL9dyoJFc_eb3zQ6",
+        },
+        .mbedtls = .{
+            .url = "git+https://github.com/allyourcodebase/mbedtls#7d862fe61ff2eac37ee54e1e017fc287bed1cd7a",
+            .hash = "mbedtls-3.6.2-E4NURzYUAABWLBwHJWx_ppb_j2kDSoGfCfR2rI2zs9dz",
+            .lazy = true,
+        },
+        .openssl = .{
+            .url = "https://github.com/allyourcodebase/openssl/archive/refs/tags/3.3.2.tar.gz",
+            .hash = "openssl-3.3.2-TC9C3Wa3ZACgB1hZbrLOQCK9XccIBaW_F3imFfIeYP06",
+            .lazy = true,
+        },
+        .libressl = .{
+            .url = "https://github.com/allyourcodebase/libressl/archive/refs/tags/4.0.0+3.tar.gz",
+            .hash = "libressl-4.0.0--kqV4OjTAADhw9rD-tZaxFy2KPrSU4Bt9FOi9UZe-Zjl",
+            .lazy = true,
+        },
+
+        .libmp3lame = .{
+            .url = "https://github.com/andrewrk/libmp3lame/archive/43818f94336064a93ae84a7dcc457418e45dbde2.tar.gz",
+            .hash = "libmp3lame-3.100.1-6-67wlF_KvEwDRCT3pTpcDzi5KGntWCEoM-WtvVPEWdlk5",
+        },
+        .libvorbis = .{
+            .url = "https://github.com/andrewrk/libvorbis/archive/b251b0bc8cad130e06c3b86a362da2a0118af157.tar.gz",
+            .hash = "libvorbis-1.3.8-5-gL_KIwoQJAAWE9KTb9qyeFxhEBndToXcOUkA2QMrG0Pn",
+        },
+        .libogg = .{
+            .url = "https://github.com/andrewrk/libogg/archive/b7addd2261eb9b657466d47830afc886f697821e.tar.gz",
+            .hash = "libogg-1.3.6-4-ZBKq7WoVAgDYFKOFcXVvFH_br4ijhHkCtoDSy1jh6-nt",
+        },
+
+        // This is used to compile some assembly files into object files for x86.
+        // Without this, ffmpeg considers the build "crippled".
+        .nasm = .{
+            .url = "https://github.com/allyourcodebase/nasm/archive/4eabafcfca4f4dc5a0a5cd60e9233640b0c192f8.tar.gz",
+            .hash = "nasm-2.16.1-5-J30Ed9pnXADeEiehXaWUd4iLEMPwLrIv42q9X7NUFs8O",
+        },
+    },
+    .paths = .{
+        "COPYING.GPLv2",
+        "COPYING.GPLv3",
+        "COPYING.LGPLv2.1",
+        "COPYING.LGPLv3",
+        "LICENSE.md",
+        "README.md",
+        "av.zig",
+        "build.zig",
+        "build.zig.zon",
+        "compat",
+        "config_components.h",
+        "doc",
+        "libavcodec",
+        "libavdevice",
+        "libavfilter",
+        "libavformat",
+        "libavutil",
+        "libpostproc",
+        "libswresample",
+        "libswscale",
+    },
+}

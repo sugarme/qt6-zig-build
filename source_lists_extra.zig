@@ -493,6 +493,18 @@ pub const qtgui_freetype_sources: []const []const u8 = &.{
 };
 
 // ============================================================================
+// QtGui OpenGL sources (relative to qtbase/src/gui/)
+// ============================================================================
+
+pub const qtgui_opengl_sources: []const []const u8 = &.{
+    "opengl/qopengl.cpp",
+    "opengl/qopenglfunctions.cpp",
+    "opengl/qopenglprogrambinarycache.cpp",
+    "kernel/qopenglcontext.cpp",
+    "kernel/qplatformopenglcontext.cpp",
+};
+
+// ============================================================================
 // QtWidgets common (cross-platform) sources (relative to qtbase/src/widgets/)
 // ============================================================================
 

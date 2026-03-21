@@ -1,0 +1,3 @@
+#include "qboxplotseries.h"
+#include <QtCore/qabstractitemmodel.h>
+#include "qvboxplotmodelmapper.h" // IWYU pragma: export

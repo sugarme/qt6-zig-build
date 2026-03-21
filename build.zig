@@ -2,6 +2,9 @@ const std = @import("std");
 const sources = @import("source_lists.zig");
 const extra = @import("source_lists_extra.zig");
 const moc_lists = @import("moc_headers.zig");
+const modules = @import("source_lists_modules.zig");
+const charts = @import("source_lists_charts.zig");
+const multimedia = @import("source_lists_multimedia.zig");
 
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
@@ -573,6 +576,7 @@ pub fn build(b: *std.Build) void {
     qtgui_mod.linkSystemLibrary("d3d12", .{});
     qtgui_mod.linkSystemLibrary("uuid", .{});
     qtgui_mod.linkSystemLibrary("dwrite", .{});
+    qtgui_mod.linkSystemLibrary("opengl32", .{});
 
     // Generate MOC outputs for QtGui
     const qtgui_moc_includes: []const std.Build.LazyPath = &.{
@@ -617,6 +621,8 @@ pub fn build(b: *std.Build) void {
     qtgui_mod.addCSourceFiles(.{ .root = b.path("Qt/6.8.3/qtbase/src/gui"), .files = extra.qtgui_win_sources, .flags = qt_gui_cxx_flags });
     // QtGui FreeType text engine sources
     qtgui_mod.addCSourceFiles(.{ .root = b.path("Qt/6.8.3/qtbase/src/gui"), .files = extra.qtgui_freetype_sources, .flags = qt_gui_cxx_flags });
+    // QtGui OpenGL sources
+    qtgui_mod.addCSourceFiles(.{ .root = b.path("Qt/6.8.3/qtbase/src/gui"), .files = extra.qtgui_opengl_sources, .flags = qt_gui_cxx_flags });
     // D3D12 Memory Allocator
     qtgui_mod.addCSourceFiles(.{ .root = b.path("Qt/6.8.3/qtbase/src/3rdparty"), .files = &.{"D3D12MemoryAllocator/D3D12MemAlloc.cpp"}, .flags = qt_gui_cxx_flags });
     // md4c markdown parser
@@ -875,6 +881,592 @@ pub fn build(b: *std.Build) void {
 
     const qwindows_lib = b.addLibrary(.{ .name = "qwindows", .linkage = .static, .root_module = qwindows_mod });
     b.installArtifact(qwindows_lib);
+
+    // ========================================================================
+    // 17. Qt6Xml (static library)
+    // ========================================================================
+
+    const qt_xml_cxx_flags: []const []const u8 = &.{
+        "-std=c++17", "-w", "-fdelayed-template-parsing",
+        "-DWIN32", "-D_WINDOWS", "-DUNICODE", "-D_UNICODE",
+        "-D_CRT_SECURE_NO_WARNINGS", "-D_CRT_NONSTDC_NO_WARNINGS",
+        "-DNOMINMAX", "-D_ENABLE_EXTENDED_ALIGNED_STORAGE",
+        "-DQT_NO_FOREACH", "-DQT_NO_USING_NAMESPACE",
+        "-DQT_USE_NODISCARD_FILE_OPEN", "-DQT_STATIC",
+        "-DQT_BUILD_XML_LIB", "-DQT_NO_DEBUG",
+        "-DQT_USE_QSTRINGBUILDER",
+        "-DQT_FEATURE_cpp_winrt=-1",
+        "-DPCRE2_STATIC", "-DPCRE2_CODE_UNIT_WIDTH=16",
+    };
+
+    const qtxml_mod = b.createModule(.{ .target = target, .optimize = optimize, .link_libc = true });
+    qtxml_mod.linkSystemLibrary("c++", .{});
+    addQtCoreIncludes(qtxml_mod, b);
+    addQtXmlIncludes(qtxml_mod, b);
+
+    qtxml_mod.addCSourceFiles(.{ .root = b.path("Qt/6.8.3/qtbase/src/xml"), .files = modules.qtxml_sources, .flags = qt_xml_cxx_flags });
+
+    const qtxml_lib = b.addLibrary(.{ .name = "Qt6Xml", .linkage = .static, .root_module = qtxml_mod });
+    b.installArtifact(qtxml_lib);
+
+    // ========================================================================
+    // 18. Qt6Sql (static library)
+    // ========================================================================
+
+    const qt_sql_cxx_flags: []const []const u8 = &.{
+        "-std=c++17", "-w", "-fdelayed-template-parsing",
+        "-DWIN32", "-D_WINDOWS", "-DUNICODE", "-D_UNICODE",
+        "-D_CRT_SECURE_NO_WARNINGS", "-D_CRT_NONSTDC_NO_WARNINGS",
+        "-DNOMINMAX", "-D_ENABLE_EXTENDED_ALIGNED_STORAGE",
+        "-DQT_NO_FOREACH", "-DQT_NO_USING_NAMESPACE",
+        "-DQT_USE_NODISCARD_FILE_OPEN", "-DQT_STATIC",
+        "-DQT_BUILD_SQL_LIB", "-DQT_NO_DEBUG",
+        "-DQT_USE_QSTRINGBUILDER", "-DQT_NO_CAST_FROM_ASCII",
+        "-DQT_FEATURE_cpp_winrt=-1",
+        "-DPCRE2_STATIC", "-DPCRE2_CODE_UNIT_WIDTH=16",
+    };
+
+    const qtsql_mod = b.createModule(.{ .target = target, .optimize = optimize, .link_libc = true });
+    qtsql_mod.linkSystemLibrary("c++", .{});
+    addQtCoreIncludes(qtsql_mod, b);
+    addQtSqlIncludes(qtsql_mod, b);
+
+    // Generate MOC outputs for QtSql
+    const qtsql_moc_includes: []const std.Build.LazyPath = &.{
+        b.path("generated/QtCore"),
+        b.path("generated/QtCore/private"),
+        b.path("generated/QtSql"),
+        b.path("Qt/6.8.3/include"),
+        b.path("Qt/6.8.3/include/QtCore"),
+        b.path("Qt/6.8.3/include/QtCore/6.8.3"),
+        b.path("Qt/6.8.3/include/QtCore/6.8.3/QtCore"),
+        b.path("Qt/6.8.3/include/QtCore/6.8.3/QtCore/private"),
+        b.path("Qt/6.8.3/include/QtSql"),
+        b.path("Qt/6.8.3/include/QtSql/6.8.3"),
+        b.path("Qt/6.8.3/include/QtSql/6.8.3/QtSql"),
+        b.path("Qt/6.8.3/include/QtSql/6.8.3/QtSql/private"),
+        b.path("Qt/6.8.3/qtbase/src/sql/kernel"),
+        b.path("Qt/6.8.3/qtbase/src/sql/models"),
+        b.path("Qt/6.8.3/qtbase/mkspecs/win32-g++"),
+    };
+    const qtsql_moc = generateMocOutputs(b, moc_exe, b.path("Qt/6.8.3/qtbase/src/sql"), modules.qtsql_moc_headers, &.{}, &.{}, &.{}, qtsql_moc_includes);
+    qtsql_mod.addIncludePath(qtsql_moc.include_dir);
+
+    qtsql_mod.addCSourceFiles(.{ .root = b.path("Qt/6.8.3/qtbase/src/sql"), .files = modules.qtsql_common_sources, .flags = qt_sql_cxx_flags });
+    qtsql_mod.addCSourceFiles(.{ .root = b.path("Qt/6.8.3/qtbase/src/sql"), .files = modules.qtsql_model_sources, .flags = qt_sql_cxx_flags });
+
+    const qtsql_lib = b.addLibrary(.{ .name = "Qt6Sql", .linkage = .static, .root_module = qtsql_mod });
+    b.installArtifact(qtsql_lib);
+
+    // ========================================================================
+    // 19. Qt6OpenGL (static library)
+    // ========================================================================
+
+    const qt_opengl_cxx_flags: []const []const u8 = &.{
+        "-std=c++17", "-w", "-fdelayed-template-parsing",
+        "-DWIN32", "-D_WINDOWS", "-DUNICODE", "-D_UNICODE",
+        "-D_CRT_SECURE_NO_WARNINGS", "-D_CRT_NONSTDC_NO_WARNINGS",
+        "-DNOMINMAX", "-D_ENABLE_EXTENDED_ALIGNED_STORAGE",
+        "-DQT_NO_FOREACH", "-DQT_NO_USING_NAMESPACE",
+        "-DQT_USE_NODISCARD_FILE_OPEN", "-DQT_STATIC",
+        "-DQT_BUILD_OPENGL_LIB", "-DQT_NO_DEBUG",
+        "-DQT_USE_QSTRINGBUILDER",
+        "-DQT_FEATURE_cpp_winrt=-1",
+        "-DPCRE2_STATIC", "-DPCRE2_CODE_UNIT_WIDTH=16",
+    };
+
+    const qtopengl_mod = b.createModule(.{ .target = target, .optimize = optimize, .link_libc = true });
+    qtopengl_mod.linkSystemLibrary("c++", .{});
+    qtopengl_mod.linkSystemLibrary("opengl32", .{});
+    addQtCoreIncludes(qtopengl_mod, b);
+    addQtGuiIncludes(qtopengl_mod, b);
+    addQtOpenGLIncludes(qtopengl_mod, b);
+    // Generated tracepoints stub
+    qtopengl_mod.addIncludePath(b.path("generated/QtOpenGL"));
+
+    // Generate MOC outputs for QtOpenGL
+    const qtopengl_moc_includes: []const std.Build.LazyPath = &.{
+        b.path("generated/QtCore"),
+        b.path("generated/QtCore/private"),
+        b.path("generated/QtGui"),
+        b.path("generated/QtGui/private"),
+        b.path("Qt/6.8.3/include"),
+        b.path("Qt/6.8.3/include/QtCore"),
+        b.path("Qt/6.8.3/include/QtCore/6.8.3"),
+        b.path("Qt/6.8.3/include/QtCore/6.8.3/QtCore"),
+        b.path("Qt/6.8.3/include/QtCore/6.8.3/QtCore/private"),
+        b.path("Qt/6.8.3/include/QtGui"),
+        b.path("Qt/6.8.3/include/QtGui/6.8.3"),
+        b.path("Qt/6.8.3/include/QtGui/6.8.3/QtGui"),
+        b.path("Qt/6.8.3/include/QtGui/6.8.3/QtGui/private"),
+        b.path("Qt/6.8.3/include/QtOpenGL"),
+        b.path("Qt/6.8.3/include/QtOpenGL/6.8.3"),
+        b.path("Qt/6.8.3/include/QtOpenGL/6.8.3/QtOpenGL"),
+        b.path("Qt/6.8.3/include/QtOpenGL/6.8.3/QtOpenGL/private"),
+        b.path("Qt/6.8.3/qtbase/src/opengl"),
+        b.path("Qt/6.8.3/qtbase/mkspecs/win32-g++"),
+    };
+    const qtopengl_moc = generateMocOutputs(b, moc_exe, b.path("Qt/6.8.3/qtbase/src/opengl"), modules.qtopengl_moc_headers, &.{}, &.{}, &.{}, qtopengl_moc_includes);
+    qtopengl_mod.addIncludePath(qtopengl_moc.include_dir);
+
+    qtopengl_mod.addCSourceFiles(.{ .root = b.path("Qt/6.8.3/qtbase/src/opengl"), .files = modules.qtopengl_common_sources, .flags = qt_opengl_cxx_flags });
+    qtopengl_mod.addCSourceFiles(.{ .root = b.path("Qt/6.8.3/qtbase/src/opengl"), .files = modules.qtopengl_desktop_sources, .flags = qt_opengl_cxx_flags });
+
+    const qtopengl_lib = b.addLibrary(.{ .name = "Qt6OpenGL", .linkage = .static, .root_module = qtopengl_mod });
+    b.installArtifact(qtopengl_lib);
+
+    // ========================================================================
+    // 20. Qt6PrintSupport (static library)
+    // ========================================================================
+
+    const qt_printsupport_cxx_flags: []const []const u8 = &.{
+        "-std=c++17", "-w", "-fdelayed-template-parsing",
+        "-DWIN32", "-D_WINDOWS", "-DUNICODE", "-D_UNICODE",
+        "-D_CRT_SECURE_NO_WARNINGS", "-D_CRT_NONSTDC_NO_WARNINGS",
+        "-DNOMINMAX", "-D_ENABLE_EXTENDED_ALIGNED_STORAGE",
+        "-DQT_NO_FOREACH", "-DQT_NO_USING_NAMESPACE",
+        "-DQT_USE_NODISCARD_FILE_OPEN", "-DQT_STATIC",
+        "-DQT_BUILD_PRINTSUPPORT_LIB", "-DQT_NO_DEBUG",
+        "-DQT_USE_QSTRINGBUILDER",
+        "-DQT_FEATURE_cpp_winrt=-1",
+        "-DPCRE2_STATIC", "-DPCRE2_CODE_UNIT_WIDTH=16",
+    };
+
+    const qtprintsupport_mod = b.createModule(.{ .target = target, .optimize = optimize, .link_libc = true });
+    qtprintsupport_mod.linkSystemLibrary("c++", .{});
+    qtprintsupport_mod.linkSystemLibrary("gdi32", .{});
+    qtprintsupport_mod.linkSystemLibrary("user32", .{});
+    qtprintsupport_mod.linkSystemLibrary("comdlg32", .{});
+    qtprintsupport_mod.linkSystemLibrary("winspool", .{});
+    addQtCoreIncludes(qtprintsupport_mod, b);
+    addQtGuiIncludes(qtprintsupport_mod, b);
+    addQtWidgetsIncludes(qtprintsupport_mod, b);
+    addQtPrintSupportIncludes(qtprintsupport_mod, b);
+
+    // Generate MOC outputs for QtPrintSupport
+    const qtprintsupport_moc_includes: []const std.Build.LazyPath = &.{
+        b.path("generated/QtCore"),
+        b.path("generated/QtCore/private"),
+        b.path("generated/QtGui"),
+        b.path("generated/QtWidgets"),
+        b.path("generated/QtPrintSupport"),
+        b.path("generated/QtPrintSupport/private"),
+        b.path("Qt/6.8.3/include"),
+        b.path("Qt/6.8.3/include/QtCore"),
+        b.path("Qt/6.8.3/include/QtCore/6.8.3"),
+        b.path("Qt/6.8.3/include/QtCore/6.8.3/QtCore"),
+        b.path("Qt/6.8.3/include/QtCore/6.8.3/QtCore/private"),
+        b.path("Qt/6.8.3/include/QtGui"),
+        b.path("Qt/6.8.3/include/QtGui/6.8.3"),
+        b.path("Qt/6.8.3/include/QtGui/6.8.3/QtGui"),
+        b.path("Qt/6.8.3/include/QtGui/6.8.3/QtGui/private"),
+        b.path("Qt/6.8.3/include/QtWidgets"),
+        b.path("Qt/6.8.3/include/QtWidgets/6.8.3"),
+        b.path("Qt/6.8.3/include/QtWidgets/6.8.3/QtWidgets"),
+        b.path("Qt/6.8.3/include/QtWidgets/6.8.3/QtWidgets/private"),
+        b.path("Qt/6.8.3/include/QtPrintSupport"),
+        b.path("Qt/6.8.3/include/QtPrintSupport/6.8.3"),
+        b.path("Qt/6.8.3/include/QtPrintSupport/6.8.3/QtPrintSupport"),
+        b.path("Qt/6.8.3/include/QtPrintSupport/6.8.3/QtPrintSupport/private"),
+        b.path("Qt/6.8.3/qtbase/src/printsupport/kernel"),
+        b.path("Qt/6.8.3/qtbase/src/printsupport/dialogs"),
+        b.path("Qt/6.8.3/qtbase/src/printsupport/widgets"),
+        b.path("Qt/6.8.3/qtbase/mkspecs/win32-g++"),
+    };
+    const qtprintsupport_moc = generateMocOutputs(b, moc_exe, b.path("Qt/6.8.3/qtbase/src/printsupport"), modules.qtprintsupport_moc_headers, modules.qtprintsupport_moc_sources, &.{}, &.{}, qtprintsupport_moc_includes);
+    qtprintsupport_mod.addIncludePath(qtprintsupport_moc.include_dir);
+
+    qtprintsupport_mod.addCSourceFiles(.{ .root = b.path("Qt/6.8.3/qtbase/src/printsupport"), .files = modules.qtprintsupport_common_sources, .flags = qt_printsupport_cxx_flags });
+    qtprintsupport_mod.addCSourceFiles(.{ .root = b.path("Qt/6.8.3/qtbase/src/printsupport"), .files = modules.qtprintsupport_win_sources, .flags = qt_printsupport_cxx_flags });
+    qtprintsupport_mod.addCSourceFiles(.{ .root = b.path("Qt/6.8.3/qtbase/src/printsupport"), .files = modules.qtprintsupport_dialog_sources, .flags = qt_printsupport_cxx_flags });
+    qtprintsupport_mod.addCSourceFiles(.{ .root = b.path("Qt/6.8.3/qtbase/src/printsupport"), .files = modules.qtprintsupport_widget_sources, .flags = qt_printsupport_cxx_flags });
+
+    const qtprintsupport_lib = b.addLibrary(.{ .name = "Qt6PrintSupport", .linkage = .static, .root_module = qtprintsupport_mod });
+    b.installArtifact(qtprintsupport_lib);
+
+    // ========================================================================
+    // 21. Qt6Svg (static library)
+    // ========================================================================
+
+    const qt_svg_cxx_flags: []const []const u8 = &.{
+        "-std=c++17", "-w", "-fdelayed-template-parsing",
+        "-DWIN32", "-D_WINDOWS", "-DUNICODE", "-D_UNICODE",
+        "-D_CRT_SECURE_NO_WARNINGS", "-D_CRT_NONSTDC_NO_WARNINGS",
+        "-DNOMINMAX", "-D_ENABLE_EXTENDED_ALIGNED_STORAGE",
+        "-DQT_NO_FOREACH", "-DQT_NO_USING_NAMESPACE",
+        "-DQT_USE_NODISCARD_FILE_OPEN", "-DQT_STATIC",
+        "-DQT_BUILD_SVG_LIB", "-DQT_NO_DEBUG",
+        "-DQT_USE_QSTRINGBUILDER",
+        "-DQT_FEATURE_cpp_winrt=-1",
+        "-DPCRE2_STATIC", "-DPCRE2_CODE_UNIT_WIDTH=16",
+    };
+
+    const qtsvg_mod = b.createModule(.{ .target = target, .optimize = optimize, .link_libc = true });
+    qtsvg_mod.linkSystemLibrary("c++", .{});
+    addQtCoreIncludes(qtsvg_mod, b);
+    addQtGuiIncludes(qtsvg_mod, b);
+    addQtSvgIncludes(qtsvg_mod, b);
+
+    // Generate MOC outputs for QtSvg
+    const qtsvg_moc_includes: []const std.Build.LazyPath = &.{
+        b.path("generated/QtCore"),
+        b.path("generated/QtCore/private"),
+        b.path("generated/QtGui"),
+        b.path("Qt/6.8.3/include"),
+        b.path("Qt/6.8.3/include/QtCore"),
+        b.path("Qt/6.8.3/include/QtCore/6.8.3"),
+        b.path("Qt/6.8.3/include/QtCore/6.8.3/QtCore"),
+        b.path("Qt/6.8.3/include/QtGui"),
+        b.path("Qt/6.8.3/include/QtGui/6.8.3"),
+        b.path("Qt/6.8.3/include/QtGui/6.8.3/QtGui"),
+        b.path("Qt/6.8.3/include/QtSvg"),
+        b.path("Qt/6.8.3/include/QtSvg/6.8.3"),
+        b.path("Qt/6.8.3/include/QtSvg/6.8.3/QtSvg"),
+        b.path("Qt/6.8.3/qtsvg/src/svg"),
+        b.path("Qt/6.8.3/qtbase/mkspecs/win32-g++"),
+    };
+    const qtsvg_moc = generateMocOutputs(b, moc_exe, b.path("Qt/6.8.3/qtsvg/src/svg"), modules.qtsvg_moc_headers, &.{}, &.{}, &.{}, qtsvg_moc_includes);
+    qtsvg_mod.addIncludePath(qtsvg_moc.include_dir);
+
+    qtsvg_mod.addCSourceFiles(.{ .root = b.path("Qt/6.8.3/qtsvg/src/svg"), .files = modules.qtsvg_sources, .flags = qt_svg_cxx_flags });
+
+    const qtsvg_lib = b.addLibrary(.{ .name = "Qt6Svg", .linkage = .static, .root_module = qtsvg_mod });
+    b.installArtifact(qtsvg_lib);
+
+    // ========================================================================
+    // 22. Qt6SvgWidgets (static library)
+    // ========================================================================
+
+    const qt_svgwidgets_cxx_flags: []const []const u8 = &.{
+        "-std=c++17", "-w", "-fdelayed-template-parsing",
+        "-DWIN32", "-D_WINDOWS", "-DUNICODE", "-D_UNICODE",
+        "-D_CRT_SECURE_NO_WARNINGS", "-D_CRT_NONSTDC_NO_WARNINGS",
+        "-DNOMINMAX", "-D_ENABLE_EXTENDED_ALIGNED_STORAGE",
+        "-DQT_NO_FOREACH", "-DQT_NO_USING_NAMESPACE",
+        "-DQT_USE_NODISCARD_FILE_OPEN", "-DQT_STATIC",
+        "-DQT_BUILD_SVGWIDGETS_LIB", "-DQT_NO_DEBUG",
+        "-DQT_USE_QSTRINGBUILDER",
+        "-DQT_FEATURE_cpp_winrt=-1",
+        "-DPCRE2_STATIC", "-DPCRE2_CODE_UNIT_WIDTH=16",
+    };
+
+    const qtsvgwidgets_mod = b.createModule(.{ .target = target, .optimize = optimize, .link_libc = true });
+    qtsvgwidgets_mod.linkSystemLibrary("c++", .{});
+    addQtCoreIncludes(qtsvgwidgets_mod, b);
+    addQtGuiIncludes(qtsvgwidgets_mod, b);
+    addQtWidgetsIncludes(qtsvgwidgets_mod, b);
+    addQtSvgIncludes(qtsvgwidgets_mod, b);
+    addQtSvgWidgetsIncludes(qtsvgwidgets_mod, b);
+
+    // Generate MOC outputs for QtSvgWidgets
+    const qtsvgwidgets_moc_includes: []const std.Build.LazyPath = &.{
+        b.path("generated/QtCore"),
+        b.path("generated/QtGui"),
+        b.path("generated/QtWidgets"),
+        b.path("Qt/6.8.3/include"),
+        b.path("Qt/6.8.3/include/QtCore"),
+        b.path("Qt/6.8.3/include/QtCore/6.8.3"),
+        b.path("Qt/6.8.3/include/QtCore/6.8.3/QtCore"),
+        b.path("Qt/6.8.3/include/QtGui"),
+        b.path("Qt/6.8.3/include/QtWidgets"),
+        b.path("Qt/6.8.3/include/QtSvg"),
+        b.path("Qt/6.8.3/include/QtSvgWidgets"),
+        b.path("Qt/6.8.3/qtsvg/src/svgwidgets"),
+        b.path("Qt/6.8.3/qtbase/mkspecs/win32-g++"),
+    };
+    const qtsvgwidgets_moc = generateMocOutputs(b, moc_exe, b.path("Qt/6.8.3/qtsvg/src/svgwidgets"), modules.qtsvgwidgets_moc_headers, &.{}, &.{}, &.{}, qtsvgwidgets_moc_includes);
+    qtsvgwidgets_mod.addIncludePath(qtsvgwidgets_moc.include_dir);
+
+    qtsvgwidgets_mod.addCSourceFiles(.{ .root = b.path("Qt/6.8.3/qtsvg/src/svgwidgets"), .files = modules.qtsvgwidgets_sources, .flags = qt_svgwidgets_cxx_flags });
+
+    const qtsvgwidgets_lib = b.addLibrary(.{ .name = "Qt6SvgWidgets", .linkage = .static, .root_module = qtsvgwidgets_mod });
+    b.installArtifact(qtsvgwidgets_lib);
+
+    // ========================================================================
+    // 23. Qt6WebChannel (static library)
+    // ========================================================================
+
+    const qt_webchannel_cxx_flags: []const []const u8 = &.{
+        "-std=c++17", "-w", "-fdelayed-template-parsing",
+        "-DWIN32", "-D_WINDOWS", "-DUNICODE", "-D_UNICODE",
+        "-D_CRT_SECURE_NO_WARNINGS", "-D_CRT_NONSTDC_NO_WARNINGS",
+        "-DNOMINMAX", "-D_ENABLE_EXTENDED_ALIGNED_STORAGE",
+        "-DQT_NO_FOREACH", "-DQT_NO_USING_NAMESPACE",
+        "-DQT_USE_NODISCARD_FILE_OPEN", "-DQT_STATIC",
+        "-DQT_BUILD_WEBCHANNEL_LIB", "-DQT_NO_DEBUG",
+        "-DQT_USE_QSTRINGBUILDER",
+        "-DQT_NO_JSVALUE",
+        "-DQT_FEATURE_cpp_winrt=-1",
+        "-DPCRE2_STATIC", "-DPCRE2_CODE_UNIT_WIDTH=16",
+    };
+
+    const qtwebchannel_mod = b.createModule(.{ .target = target, .optimize = optimize, .link_libc = true });
+    qtwebchannel_mod.linkSystemLibrary("c++", .{});
+    addQtCoreIncludes(qtwebchannel_mod, b);
+    addQtWebChannelIncludes(qtwebchannel_mod, b);
+
+    // Generate MOC outputs for QtWebChannel
+    const qtwebchannel_moc_includes: []const std.Build.LazyPath = &.{
+        b.path("generated/QtCore"),
+        b.path("generated/QtCore/private"),
+        b.path("Qt/6.8.3/include"),
+        b.path("Qt/6.8.3/include/QtCore"),
+        b.path("Qt/6.8.3/include/QtCore/6.8.3"),
+        b.path("Qt/6.8.3/include/QtCore/6.8.3/QtCore"),
+        b.path("Qt/6.8.3/include/QtCore/6.8.3/QtCore/private"),
+        b.path("Qt/6.8.3/include/QtWebChannel"),
+        b.path("Qt/6.8.3/include/QtWebChannel/6.8.3"),
+        b.path("Qt/6.8.3/include/QtWebChannel/6.8.3/QtWebChannel"),
+        b.path("Qt/6.8.3/include/QtWebChannel/6.8.3/QtWebChannel/private"),
+        b.path("Qt/6.8.3/qtwebchannel/src/webchannel"),
+        b.path("Qt/6.8.3/qtbase/mkspecs/win32-g++"),
+    };
+    const qtwebchannel_moc = generateMocOutputs(b, moc_exe, b.path("Qt/6.8.3/qtwebchannel/src/webchannel"), modules.qtwebchannel_moc_headers, &.{}, &.{}, &.{}, qtwebchannel_moc_includes);
+    qtwebchannel_mod.addIncludePath(qtwebchannel_moc.include_dir);
+
+    qtwebchannel_mod.addCSourceFiles(.{ .root = b.path("Qt/6.8.3/qtwebchannel/src/webchannel"), .files = modules.qtwebchannel_sources, .flags = qt_webchannel_cxx_flags });
+
+    const qtwebchannel_lib = b.addLibrary(.{ .name = "Qt6WebChannel", .linkage = .static, .root_module = qtwebchannel_mod });
+    b.installArtifact(qtwebchannel_lib);
+
+    // ========================================================================
+    // 24. Qt6Charts (static library)
+    // ========================================================================
+
+    const qt_charts_cxx_flags: []const []const u8 = &.{
+        "-std=c++17", "-w", "-fdelayed-template-parsing",
+        "-DWIN32", "-D_WINDOWS", "-DUNICODE", "-D_UNICODE",
+        "-D_CRT_SECURE_NO_WARNINGS", "-D_CRT_NONSTDC_NO_WARNINGS",
+        "-DNOMINMAX", "-D_ENABLE_EXTENDED_ALIGNED_STORAGE",
+        "-DQT_NO_FOREACH", "-DQT_NO_USING_NAMESPACE",
+        "-DQT_USE_NODISCARD_FILE_OPEN", "-DQT_STATIC",
+        "-DQT_BUILD_CHARTS_LIB", "-DQT_NO_DEBUG",
+        "-DQT_USE_QSTRINGBUILDER",
+        "-DQT_FEATURE_cpp_winrt=-1",
+        "-DPCRE2_STATIC", "-DPCRE2_CODE_UNIT_WIDTH=16",
+    };
+
+    const qtcharts_mod = b.createModule(.{ .target = target, .optimize = optimize, .link_libc = true });
+    qtcharts_mod.linkSystemLibrary("c++", .{});
+    qtcharts_mod.linkSystemLibrary("user32", .{});
+    addQtCoreIncludes(qtcharts_mod, b);
+    addQtGuiIncludes(qtcharts_mod, b);
+    addQtWidgetsIncludes(qtcharts_mod, b);
+    addQtChartsIncludes(qtcharts_mod, b);
+
+    // Generate MOC outputs for QtCharts
+    const qtcharts_moc_includes: []const std.Build.LazyPath = &.{
+        b.path("generated/QtCore"),
+        b.path("generated/QtCore/private"),
+        b.path("generated/QtGui"),
+        b.path("generated/QtWidgets"),
+        b.path("generated/QtCharts"),
+        b.path("Qt/6.8.3/include"),
+        b.path("Qt/6.8.3/include/QtCore"),
+        b.path("Qt/6.8.3/include/QtCore/6.8.3"),
+        b.path("Qt/6.8.3/include/QtCore/6.8.3/QtCore"),
+        b.path("Qt/6.8.3/include/QtCore/6.8.3/QtCore/private"),
+        b.path("Qt/6.8.3/include/QtGui"),
+        b.path("Qt/6.8.3/include/QtGui/6.8.3"),
+        b.path("Qt/6.8.3/include/QtGui/6.8.3/QtGui"),
+        b.path("Qt/6.8.3/include/QtWidgets"),
+        b.path("Qt/6.8.3/include/QtWidgets/6.8.3"),
+        b.path("Qt/6.8.3/include/QtWidgets/6.8.3/QtWidgets"),
+        b.path("Qt/6.8.3/include/QtCharts"),
+        b.path("Qt/6.8.3/include/QtCharts/6.8.3"),
+        b.path("Qt/6.8.3/include/QtCharts/6.8.3/QtCharts"),
+        b.path("Qt/6.8.3/include/QtCharts/6.8.3/QtCharts/private"),
+        b.path("Qt/6.8.3/qtcharts/src/charts"),
+        b.path("Qt/6.8.3/qtcharts/src/charts/areachart"),
+        b.path("Qt/6.8.3/qtcharts/src/charts/axis"),
+        b.path("Qt/6.8.3/qtcharts/src/charts/axis/barcategoryaxis"),
+        b.path("Qt/6.8.3/qtcharts/src/charts/axis/categoryaxis"),
+        b.path("Qt/6.8.3/qtcharts/src/charts/axis/coloraxis"),
+        b.path("Qt/6.8.3/qtcharts/src/charts/axis/datetimeaxis"),
+        b.path("Qt/6.8.3/qtcharts/src/charts/axis/logvalueaxis"),
+        b.path("Qt/6.8.3/qtcharts/src/charts/axis/valueaxis"),
+        b.path("Qt/6.8.3/qtcharts/src/charts/barchart"),
+        b.path("Qt/6.8.3/qtcharts/src/charts/boxplotchart"),
+        b.path("Qt/6.8.3/qtcharts/src/charts/candlestickchart"),
+        b.path("Qt/6.8.3/qtcharts/src/charts/domain"),
+        b.path("Qt/6.8.3/qtcharts/src/charts/layout"),
+        b.path("Qt/6.8.3/qtcharts/src/charts/legend"),
+        b.path("Qt/6.8.3/qtcharts/src/charts/linechart"),
+        b.path("Qt/6.8.3/qtcharts/src/charts/piechart"),
+        b.path("Qt/6.8.3/qtcharts/src/charts/scatterchart"),
+        b.path("Qt/6.8.3/qtcharts/src/charts/splinechart"),
+        b.path("Qt/6.8.3/qtcharts/src/charts/xychart"),
+        b.path("Qt/6.8.3/qtbase/mkspecs/win32-g++"),
+    };
+    // Charts MOC: all headers use -i flag (output is #include'd by source files)
+    const qtcharts_moc = generateMocOutputs(b, moc_exe, b.path("Qt/6.8.3/qtcharts/src/charts"), charts.qtcharts_moc_headers ++ charts.qtcharts_moc_headers_private, charts.qtcharts_moc_sources, &.{}, &.{}, qtcharts_moc_includes);
+    qtcharts_mod.addIncludePath(qtcharts_moc.include_dir);
+
+    qtcharts_mod.addCSourceFiles(.{ .root = b.path("Qt/6.8.3/qtcharts/src/charts"), .files = charts.qtcharts_sources, .flags = qt_charts_cxx_flags });
+
+    const qtcharts_lib = b.addLibrary(.{ .name = "Qt6Charts", .linkage = .static, .root_module = qtcharts_mod });
+    b.installArtifact(qtcharts_lib);
+
+    // ========================================================================
+    // 25. Qt6Multimedia (static library)
+    // ========================================================================
+
+    const qt_multimedia_cxx_flags: []const []const u8 = &.{
+        "-std=c++17", "-w", "-fdelayed-template-parsing",
+        "-DWIN32", "-D_WINDOWS", "-DUNICODE", "-D_UNICODE",
+        "-D_CRT_SECURE_NO_WARNINGS", "-D_CRT_NONSTDC_NO_WARNINGS",
+        "-DNOMINMAX", "-D_ENABLE_EXTENDED_ALIGNED_STORAGE",
+        "-DQT_NO_FOREACH", "-DQT_NO_USING_NAMESPACE",
+        "-DQT_USE_NODISCARD_FILE_OPEN", "-DQT_STATIC",
+        "-DQT_BUILD_MULTIMEDIA_LIB", "-DQT_NO_DEBUG",
+        "-DQT_USE_QSTRINGBUILDER",
+        "-DQT_FEATURE_cpp_winrt=-1",
+        "-DPCRE2_STATIC", "-DPCRE2_CODE_UNIT_WIDTH=16",
+    };
+
+    const qtmultimedia_mod = b.createModule(.{ .target = target, .optimize = optimize, .link_libc = true });
+    qtmultimedia_mod.linkSystemLibrary("c++", .{});
+    qtmultimedia_mod.linkSystemLibrary("ole32", .{});
+    qtmultimedia_mod.linkSystemLibrary("oleaut32", .{});
+    qtmultimedia_mod.linkSystemLibrary("uuid", .{});
+    qtmultimedia_mod.linkSystemLibrary("winmm", .{});
+    qtmultimedia_mod.linkSystemLibrary("mf", .{});
+    qtmultimedia_mod.linkSystemLibrary("mfplat", .{});
+    qtmultimedia_mod.linkSystemLibrary("mfreadwrite", .{});
+    qtmultimedia_mod.linkSystemLibrary("mfuuid", .{});
+    qtmultimedia_mod.linkSystemLibrary("strmiids", .{});
+    qtmultimedia_mod.linkSystemLibrary("wmcodecdspuuid", .{});
+    addQtCoreIncludes(qtmultimedia_mod, b);
+    addQtGuiIncludes(qtmultimedia_mod, b);
+    addQtMultimediaIncludes(qtmultimedia_mod, b);
+
+    // Generate MOC outputs for QtMultimedia
+    const qtmultimedia_moc_includes: []const std.Build.LazyPath = &.{
+        b.path("generated/QtCore"),
+        b.path("generated/QtCore/private"),
+        b.path("generated/QtGui"),
+        b.path("generated/QtGui/private"),
+        b.path("generated/QtMultimedia"),
+        b.path("generated/QtMultimedia/private"),
+        b.path("Qt/6.8.3/include"),
+        b.path("Qt/6.8.3/include/QtCore"),
+        b.path("Qt/6.8.3/include/QtCore/6.8.3"),
+        b.path("Qt/6.8.3/include/QtCore/6.8.3/QtCore"),
+        b.path("Qt/6.8.3/include/QtCore/6.8.3/QtCore/private"),
+        b.path("Qt/6.8.3/include/QtGui"),
+        b.path("Qt/6.8.3/include/QtGui/6.8.3"),
+        b.path("Qt/6.8.3/include/QtGui/6.8.3/QtGui"),
+        b.path("Qt/6.8.3/include/QtGui/6.8.3/QtGui/private"),
+        b.path("Qt/6.8.3/include/QtNetwork"),
+        b.path("Qt/6.8.3/include/QtMultimedia"),
+        b.path("Qt/6.8.3/include/QtMultimedia/6.8.3"),
+        b.path("Qt/6.8.3/include/QtMultimedia/6.8.3/QtMultimedia"),
+        b.path("Qt/6.8.3/include/QtMultimedia/6.8.3/QtMultimedia/private"),
+        b.path("Qt/6.8.3/qtmultimedia/src/multimedia"),
+        b.path("Qt/6.8.3/qtmultimedia/src/multimedia/audio"),
+        b.path("Qt/6.8.3/qtmultimedia/src/multimedia/camera"),
+        b.path("Qt/6.8.3/qtmultimedia/src/multimedia/video"),
+        b.path("Qt/6.8.3/qtmultimedia/src/multimedia/recording"),
+        b.path("Qt/6.8.3/qtmultimedia/src/multimedia/playback"),
+        b.path("Qt/6.8.3/qtmultimedia/src/multimedia/platform"),
+        b.path("Qt/6.8.3/qtmultimedia/src/multimedia/windows"),
+        b.path("Qt/6.8.3/qtbase/mkspecs/win32-g++"),
+    };
+    const qtmultimedia_moc = generateMocOutputs(b, moc_exe, b.path("Qt/6.8.3/qtmultimedia/src/multimedia"), multimedia.qtmultimedia_moc_headers, multimedia.qtmultimedia_moc_sources, &.{}, &.{}, qtmultimedia_moc_includes);
+    qtmultimedia_mod.addIncludePath(qtmultimedia_moc.include_dir);
+
+    // Also generate MOC for Windows-specific headers
+    const qtmultimedia_win_moc = generateMocOutputs(b, moc_exe, b.path("Qt/6.8.3/qtmultimedia/src/multimedia"), multimedia.qtmultimedia_win_moc_headers, &.{}, &.{}, &.{}, qtmultimedia_moc_includes);
+    qtmultimedia_mod.addIncludePath(qtmultimedia_win_moc.include_dir);
+
+    qtmultimedia_mod.addCSourceFiles(.{ .root = b.path("Qt/6.8.3/qtmultimedia/src/multimedia"), .files = multimedia.qtmultimedia_common_sources, .flags = qt_multimedia_cxx_flags });
+    qtmultimedia_mod.addCSourceFiles(.{ .root = b.path("Qt/6.8.3/qtmultimedia/src/multimedia"), .files = multimedia.qtmultimedia_win_sources, .flags = qt_multimedia_cxx_flags });
+    // SIMD sources
+    qtmultimedia_mod.addCSourceFiles(.{ .root = b.path("Qt/6.8.3/qtmultimedia/src/multimedia"), .files = multimedia.qtmultimedia_simd_sse2_sources, .flags = qt_multimedia_cxx_flags ++ &[_][]const u8{"-msse2"} });
+    qtmultimedia_mod.addCSourceFiles(.{ .root = b.path("Qt/6.8.3/qtmultimedia/src/multimedia"), .files = multimedia.qtmultimedia_simd_ssse3_sources, .flags = qt_multimedia_cxx_flags ++ &[_][]const u8{"-mssse3"} });
+    qtmultimedia_mod.addCSourceFiles(.{ .root = b.path("Qt/6.8.3/qtmultimedia/src/multimedia"), .files = multimedia.qtmultimedia_simd_avx2_sources, .flags = qt_multimedia_cxx_flags ++ &[_][]const u8{"-mavx2"} });
+
+    const qtmultimedia_lib = b.addLibrary(.{ .name = "Qt6Multimedia", .linkage = .static, .root_module = qtmultimedia_mod });
+    b.installArtifact(qtmultimedia_lib);
+
+    // ========================================================================
+    // 26. Qt6SpatialAudio (static library)
+    // ========================================================================
+
+    const qt_spatialaudio_cxx_flags: []const []const u8 = &.{
+        "-std=c++17", "-w", "-fdelayed-template-parsing",
+        "-DWIN32", "-D_WINDOWS", "-DUNICODE", "-D_UNICODE",
+        "-D_CRT_SECURE_NO_WARNINGS", "-D_CRT_NONSTDC_NO_WARNINGS",
+        "-DNOMINMAX", "-D_ENABLE_EXTENDED_ALIGNED_STORAGE",
+        "-DQT_NO_FOREACH", "-DQT_NO_USING_NAMESPACE",
+        "-DQT_USE_NODISCARD_FILE_OPEN", "-DQT_STATIC",
+        "-DQT_BUILD_SPATIALAUDIO_LIB", "-DQT_NO_DEBUG",
+        "-DQT_USE_QSTRINGBUILDER",
+        "-DQT_FEATURE_cpp_winrt=-1",
+        "-DPCRE2_STATIC", "-DPCRE2_CODE_UNIT_WIDTH=16",
+    };
+
+    const qtspatialaudio_mod = b.createModule(.{ .target = target, .optimize = optimize, .link_libc = true });
+    qtspatialaudio_mod.linkSystemLibrary("c++", .{});
+    addQtCoreIncludes(qtspatialaudio_mod, b);
+    addQtGuiIncludes(qtspatialaudio_mod, b);
+    addQtMultimediaIncludes(qtspatialaudio_mod, b);
+    addQtSpatialAudioIncludes(qtspatialaudio_mod, b);
+
+    // Generate MOC outputs for QtSpatialAudio
+    const qtspatialaudio_moc_includes: []const std.Build.LazyPath = &.{
+        b.path("generated/QtCore"),
+        b.path("generated/QtCore/private"),
+        b.path("generated/QtGui"),
+        b.path("generated/QtMultimedia"),
+        b.path("generated/QtMultimedia/private"),
+        b.path("Qt/6.8.3/include"),
+        b.path("Qt/6.8.3/include/QtCore"),
+        b.path("Qt/6.8.3/include/QtCore/6.8.3"),
+        b.path("Qt/6.8.3/include/QtCore/6.8.3/QtCore"),
+        b.path("Qt/6.8.3/include/QtGui"),
+        b.path("Qt/6.8.3/include/QtMultimedia"),
+        b.path("Qt/6.8.3/include/QtMultimedia/6.8.3"),
+        b.path("Qt/6.8.3/include/QtMultimedia/6.8.3/QtMultimedia"),
+        b.path("Qt/6.8.3/include/QtMultimedia/6.8.3/QtMultimedia/private"),
+        b.path("Qt/6.8.3/include/QtSpatialAudio"),
+        b.path("Qt/6.8.3/include/QtSpatialAudio/6.8.3"),
+        b.path("Qt/6.8.3/include/QtSpatialAudio/6.8.3/QtSpatialAudio"),
+        b.path("Qt/6.8.3/qtmultimedia/src/spatialaudio"),
+        b.path("Qt/6.8.3/qtbase/mkspecs/win32-g++"),
+    };
+    const qtspatialaudio_moc = generateMocOutputs(b, moc_exe, b.path("Qt/6.8.3/qtmultimedia/src/spatialaudio"), multimedia.qtspatialaudio_moc_headers, multimedia.qtspatialaudio_moc_sources, &.{}, &.{}, qtspatialaudio_moc_includes);
+    qtspatialaudio_mod.addIncludePath(qtspatialaudio_moc.include_dir);
+
+    qtspatialaudio_mod.addCSourceFiles(.{ .root = b.path("Qt/6.8.3/qtmultimedia/src/spatialaudio"), .files = multimedia.qtspatialaudio_sources, .flags = qt_spatialaudio_cxx_flags });
+
+    // Resonance Audio 3rdparty library (compiled into SpatialAudio)
+    const resonance_audio_flags: []const []const u8 = &.{
+        "-std=c++17", "-w",
+        "-DWIN32", "-D_WINDOWS", "-DUNICODE", "-D_UNICODE",
+        "-D_CRT_SECURE_NO_WARNINGS", "-DNOMINMAX",
+        "-D_USE_MATH_DEFINES",
+        "-DEIGEN_MPL2_ONLY",
+        "-DEIGEN_DONT_VECTORIZE",
+        "-DEIGEN_DONT_ALIGN",
+        "-DEIGEN_MAX_ALIGN_BYTES=0",
+        "-DEIGEN_DONT_ALIGN_STATICALLY",
+        "-DEIGEN_MAX_STATIC_ALIGN_BYTES=0",
+        "-fvisibility=hidden",
+        "-mno-avx512f",
+    };
+    qtspatialaudio_mod.addCSourceFiles(.{ .root = b.path("Qt/6.8.3/qtmultimedia/src/3rdparty/resonance-audio"), .files = multimedia.resonance_audio_sources, .flags = resonance_audio_flags });
+    qtspatialaudio_mod.addCSourceFiles(.{ .root = b.path("Qt/6.8.3/qtmultimedia/src/resonance-audio"), .files = multimedia.resonance_audio_qt_sources, .flags = resonance_audio_flags });
+
+    // Resonance Audio include paths
+    qtspatialaudio_mod.addIncludePath(b.path("Qt/6.8.3/qtmultimedia/src/3rdparty/resonance-audio"));
+    qtspatialaudio_mod.addIncludePath(b.path("Qt/6.8.3/qtmultimedia/src/3rdparty/resonance-audio/resonance_audio"));
+    qtspatialaudio_mod.addIncludePath(b.path("Qt/6.8.3/qtmultimedia/src/3rdparty/eigen"));
+    qtspatialaudio_mod.addIncludePath(b.path("Qt/6.8.3/qtmultimedia/src/3rdparty/pffft"));
+    qtspatialaudio_mod.addIncludePath(b.path("Qt/6.8.3/qtmultimedia/src/resonance-audio"));
+
+    const qtspatialaudio_lib = b.addLibrary(.{ .name = "Qt6SpatialAudio", .linkage = .static, .root_module = qtspatialaudio_mod });
+    b.installArtifact(qtspatialaudio_lib);
 }
 
 // ============================================================================
@@ -1116,6 +1708,177 @@ fn addQtNetworkIncludes(mod: *std.Build.Module, b: *std.Build) void {
         "Qt/6.8.3/include/QtNetwork/6.8.3/QtNetwork/private",
     };
     for (network_inc_paths) |dir| {
+        mod.addIncludePath(b.path(dir));
+    }
+}
+
+fn addQtXmlIncludes(mod: *std.Build.Module, b: *std.Build) void {
+    mod.addIncludePath(b.path("generated/QtXml"));
+    const inc_paths = [_][]const u8{
+        "Qt/6.8.3/qtbase/src/xml",
+        "Qt/6.8.3/qtbase/src/xml/dom",
+        "Qt/6.8.3/include/QtXml",
+        "Qt/6.8.3/include/QtXml/6.8.3",
+        "Qt/6.8.3/include/QtXml/6.8.3/QtXml",
+        "Qt/6.8.3/include/QtXml/6.8.3/QtXml/private",
+    };
+    for (inc_paths) |dir| {
+        mod.addIncludePath(b.path(dir));
+    }
+}
+
+fn addQtSqlIncludes(mod: *std.Build.Module, b: *std.Build) void {
+    mod.addIncludePath(b.path("generated/QtSql"));
+    const inc_paths = [_][]const u8{
+        "Qt/6.8.3/qtbase/src/sql",
+        "Qt/6.8.3/qtbase/src/sql/kernel",
+        "Qt/6.8.3/qtbase/src/sql/models",
+        "Qt/6.8.3/include/QtSql",
+        "Qt/6.8.3/include/QtSql/6.8.3",
+        "Qt/6.8.3/include/QtSql/6.8.3/QtSql",
+        "Qt/6.8.3/include/QtSql/6.8.3/QtSql/private",
+    };
+    for (inc_paths) |dir| {
+        mod.addIncludePath(b.path(dir));
+    }
+}
+
+fn addQtOpenGLIncludes(mod: *std.Build.Module, b: *std.Build) void {
+    mod.addIncludePath(b.path("generated/QtOpenGL"));
+    const inc_paths = [_][]const u8{
+        "Qt/6.8.3/qtbase/src/opengl",
+        "Qt/6.8.3/include/QtOpenGL",
+        "Qt/6.8.3/include/QtOpenGL/6.8.3",
+        "Qt/6.8.3/include/QtOpenGL/6.8.3/QtOpenGL",
+        "Qt/6.8.3/include/QtOpenGL/6.8.3/QtOpenGL/private",
+    };
+    for (inc_paths) |dir| {
+        mod.addIncludePath(b.path(dir));
+    }
+}
+
+fn addQtPrintSupportIncludes(mod: *std.Build.Module, b: *std.Build) void {
+    mod.addIncludePath(b.path("generated/QtPrintSupport"));
+    mod.addIncludePath(b.path("generated/QtPrintSupport/private"));
+    const inc_paths = [_][]const u8{
+        "Qt/6.8.3/qtbase/src/printsupport",
+        "Qt/6.8.3/qtbase/src/printsupport/kernel",
+        "Qt/6.8.3/qtbase/src/printsupport/dialogs",
+        "Qt/6.8.3/qtbase/src/printsupport/widgets",
+        "Qt/6.8.3/qtbase/src/printsupport/platform/windows",
+        "Qt/6.8.3/include/QtPrintSupport",
+        "Qt/6.8.3/include/QtPrintSupport/6.8.3",
+        "Qt/6.8.3/include/QtPrintSupport/6.8.3/QtPrintSupport",
+        "Qt/6.8.3/include/QtPrintSupport/6.8.3/QtPrintSupport/private",
+    };
+    for (inc_paths) |dir| {
+        mod.addIncludePath(b.path(dir));
+    }
+}
+
+fn addQtSvgIncludes(mod: *std.Build.Module, b: *std.Build) void {
+    mod.addIncludePath(b.path("generated/QtSvg"));
+    const inc_paths = [_][]const u8{
+        "Qt/6.8.3/qtsvg/src/svg",
+        "Qt/6.8.3/include/QtSvg",
+        "Qt/6.8.3/include/QtSvg/6.8.3",
+        "Qt/6.8.3/include/QtSvg/6.8.3/QtSvg",
+        "Qt/6.8.3/include/QtSvg/6.8.3/QtSvg/private",
+    };
+    for (inc_paths) |dir| {
+        mod.addIncludePath(b.path(dir));
+    }
+}
+
+fn addQtSvgWidgetsIncludes(mod: *std.Build.Module, b: *std.Build) void {
+    mod.addIncludePath(b.path("generated/QtSvgWidgets"));
+    const inc_paths = [_][]const u8{
+        "Qt/6.8.3/qtsvg/src/svgwidgets",
+        "Qt/6.8.3/include/QtSvgWidgets",
+        "Qt/6.8.3/include/QtSvgWidgets/6.8.3",
+        "Qt/6.8.3/include/QtSvgWidgets/6.8.3/QtSvgWidgets",
+        "Qt/6.8.3/include/QtSvgWidgets/6.8.3/QtSvgWidgets/private",
+    };
+    for (inc_paths) |dir| {
+        mod.addIncludePath(b.path(dir));
+    }
+}
+
+fn addQtWebChannelIncludes(mod: *std.Build.Module, b: *std.Build) void {
+    mod.addIncludePath(b.path("generated/QtWebChannel"));
+    const inc_paths = [_][]const u8{
+        "Qt/6.8.3/qtwebchannel/src/webchannel",
+        "Qt/6.8.3/include/QtWebChannel",
+        "Qt/6.8.3/include/QtWebChannel/6.8.3",
+        "Qt/6.8.3/include/QtWebChannel/6.8.3/QtWebChannel",
+        "Qt/6.8.3/include/QtWebChannel/6.8.3/QtWebChannel/private",
+    };
+    for (inc_paths) |dir| {
+        mod.addIncludePath(b.path(dir));
+    }
+}
+
+fn addQtChartsIncludes(mod: *std.Build.Module, b: *std.Build) void {
+    mod.addIncludePath(b.path("generated/QtCharts"));
+    const inc_paths = [_][]const u8{
+        "Qt/6.8.3/qtcharts/src/charts",
+        "Qt/6.8.3/qtcharts/src/charts/animations",
+        "Qt/6.8.3/qtcharts/src/charts/areachart",
+        "Qt/6.8.3/qtcharts/src/charts/axis",
+        "Qt/6.8.3/qtcharts/src/charts/barchart",
+        "Qt/6.8.3/qtcharts/src/charts/boxplotchart",
+        "Qt/6.8.3/qtcharts/src/charts/candlestickchart",
+        "Qt/6.8.3/qtcharts/src/charts/domain",
+        "Qt/6.8.3/qtcharts/src/charts/layout",
+        "Qt/6.8.3/qtcharts/src/charts/legend",
+        "Qt/6.8.3/qtcharts/src/charts/linechart",
+        "Qt/6.8.3/qtcharts/src/charts/piechart",
+        "Qt/6.8.3/qtcharts/src/charts/scatterchart",
+        "Qt/6.8.3/qtcharts/src/charts/splinechart",
+        "Qt/6.8.3/qtcharts/src/charts/themes",
+        "Qt/6.8.3/qtcharts/src/charts/xychart",
+        "Qt/6.8.3/include/QtCharts",
+        "Qt/6.8.3/include/QtCharts/6.8.3",
+        "Qt/6.8.3/include/QtCharts/6.8.3/QtCharts",
+        "Qt/6.8.3/include/QtCharts/6.8.3/QtCharts/private",
+    };
+    for (inc_paths) |dir| {
+        mod.addIncludePath(b.path(dir));
+    }
+}
+
+fn addQtMultimediaIncludes(mod: *std.Build.Module, b: *std.Build) void {
+    mod.addIncludePath(b.path("generated/QtMultimedia"));
+    mod.addIncludePath(b.path("generated/QtMultimedia/private"));
+    const inc_paths = [_][]const u8{
+        "Qt/6.8.3/qtmultimedia/src/multimedia",
+        "Qt/6.8.3/qtmultimedia/src/multimedia/audio",
+        "Qt/6.8.3/qtmultimedia/src/multimedia/camera",
+        "Qt/6.8.3/qtmultimedia/src/multimedia/platform",
+        "Qt/6.8.3/qtmultimedia/src/multimedia/playback",
+        "Qt/6.8.3/qtmultimedia/src/multimedia/recording",
+        "Qt/6.8.3/qtmultimedia/src/multimedia/video",
+        "Qt/6.8.3/qtmultimedia/src/multimedia/windows",
+        "Qt/6.8.3/include/QtMultimedia",
+        "Qt/6.8.3/include/QtMultimedia/6.8.3",
+        "Qt/6.8.3/include/QtMultimedia/6.8.3/QtMultimedia",
+        "Qt/6.8.3/include/QtMultimedia/6.8.3/QtMultimedia/private",
+    };
+    for (inc_paths) |dir| {
+        mod.addIncludePath(b.path(dir));
+    }
+}
+
+fn addQtSpatialAudioIncludes(mod: *std.Build.Module, b: *std.Build) void {
+    mod.addIncludePath(b.path("generated/QtSpatialAudio"));
+    const inc_paths = [_][]const u8{
+        "Qt/6.8.3/qtmultimedia/src/spatialaudio",
+        "Qt/6.8.3/include/QtSpatialAudio",
+        "Qt/6.8.3/include/QtSpatialAudio/6.8.3",
+        "Qt/6.8.3/include/QtSpatialAudio/6.8.3/QtSpatialAudio",
+        "Qt/6.8.3/include/QtSpatialAudio/6.8.3/QtSpatialAudio/private",
+    };
+    for (inc_paths) |dir| {
         mod.addIncludePath(b.path(dir));
     }
 }
