@@ -42,11 +42,18 @@ qtZlib, qtPcre2, qtDoubleConversion  (independent 3rd party libs)
         ▼
     moc.exe  (links qtBootstrap)
         │
+        ├──► MOC generation for QtCore, QtGui, QtWidgets, QtNetwork, qwindows
+        │
         ▼
    Qt6Core.lib  (full QtCore with MOC outputs)
         │
-        ▼
-    rcc.exe  (links Qt6Core + qtZlib + qtPcre2)
+        ├──► rcc.exe  (links Qt6Core + qtZlib + qtPcre2)
+        │
+        ├──► Qt6Gui.lib     (+ qtHarfbuzz, qtFreetype, qtLibpng, qtLibjpeg)
+        ├──► Qt6Widgets.lib
+        ├──► Qt6Network.lib
+        ├──► Qt6Concurrent.lib  (header-only, no MOC)
+        └──► qwindows.lib  (Windows platform plugin)
 ```
 
 ### Directory Structure
@@ -57,6 +64,7 @@ qt6-zig-build/
 ├── build.zig.zon          # Package manifest
 ├── source_lists.zig       # QtCore source file arrays
 ├── source_lists_extra.zig # QtGui/Widgets/Network/etc source arrays
+├── moc_headers.zig        # MOC header/source lists per module
 ├── DEV_NOTES.md           # This file
 ├── qt-resource/
 │   ├── qtbase/            # Junction → Qt 6.8.3 Src/qtbase
@@ -74,12 +82,9 @@ qt6-zig-build/
 │   │       ├── qconfig_p.h         # Private configuration
 │   │       ├── qtcore-config_p.h   # Private feature flags
 │   │       └── qtcore_tracepoints_p.h
-│   ├── moc/
-│   │   ├── moc_qnamespace.cpp      # Standalone MOC output
-│   │   └── include/                # All MOC-generated files
-│   │       ├── moc_qobject.cpp
-│   │       ├── moc_qcoreapplication.cpp
-│   │       └── ... (68 files)
+│   ├── uic/
+│   │   └── ui_qfiledialog.h       # UIC-generated form header
+│   ├── rcc/                        # RCC-generated resource files
 │   ├── qmimeprovider_database.cpp  # Generated MIME type database
 │   ├── moc_parser_patched.cpp      # Clang-compatible moc parser
 │   └── zig_compat.h
@@ -113,15 +118,28 @@ We replicate this approach. Bootstrap defines `QT_BOOTSTRAPPED` which disables:
 - Plugins/library loading
 - And many more features
 
-### 3. Pre-generated MOC Outputs
+### 3. Build-time MOC Generation
 
-Instead of building moc first and then running it, we use pre-generated MOC outputs
-from an existing CMake build. This avoids the chicken-and-egg problem and simplifies
-the build process. The MOC outputs are stored in `generated/moc/`.
+MOC outputs are generated at build time by the Zig build system. The build first
+compiles `moc.exe` (linked against `qtBootstrap`), then runs it on all headers that
+need MOC processing. The `moc_headers.zig` file declares per-module lists of:
+
+- **moc_headers**: Headers → `moc_*.cpp` files (`-i` flag, `#include`d by source files)
+- **moc_sources**: Source files → `*.moc` files (`-i` flag, `#include`d inline)
+- **moc_standalone**: Headers → `moc_*.cpp` files (no `-i` flag, compiled as separate TUs)
+- **moc_empty**: Empty stub files for disabled features (e.g., `moc_qopenglcontext.cpp`)
+
+The `generateMocOutputs()` helper in `build.zig` orchestrates this. Each MOC run
+produces output into a `WriteFiles` step, and the resulting directory is added as an
+include path so source files can `#include "moc_*.cpp"` as expected.
+
+Platform defines (`-DWIN32`, `-D_WIN32`, `-DWIN64`, `-D_WIN64`, etc.) are passed to
+MOC so Qt headers correctly derive `Q_OS_WIN` and conditionally exclude Unix-only
+private slots (e.g., `_q_canWrite` in `QProcessPrivate`).
 
 Key insight: Most MOC files are `#include`d directly from the source .cpp files
-(e.g., `qobject.cpp` includes `moc_qobject.cpp` at the end). Only `moc_qnamespace.cpp`
-needs standalone compilation.
+(e.g., `qobject.cpp` includes `moc_qobject.cpp` at the end). Only a few need
+standalone compilation (e.g., `moc_qnamespace.cpp` for QtCore, several for qwindows).
 
 ### 4. Configuration Headers
 
@@ -154,7 +172,7 @@ One source file required patching for Clang compatibility:
 |----------|-------|
 | Common (cross-platform) | ~180 |
 | Windows-specific | ~25 |
-| MOC-generated | 69 |
+| MOC-generated (at build time) | 69 |
 | 3rd party (embedded) | 2 (SHA hash algorithms) |
 | Generated | 2 (MIME database, qconfig.cpp) |
 | **Total** | **~278** |
@@ -209,13 +227,13 @@ zig build -Doptimize=ReleaseFast
 1. **Windows x86_64 only**: Currently configured for Windows. Linux/macOS would need
    different platform-specific source files and mkspecs.
 
-2. **Pre-generated MOC**: MOC outputs are pre-generated from an existing build.
-   If Qt headers change, they need to be regenerated using the built `moc.exe`.
+2. **No QML/Qt Quick**: Only the C++ modules (Core, Gui, Widgets, Network, Concurrent) are built.
 
-3. **No QML/Qt Quick**: Only the C++ modules (Core, Gui, Widgets, Network, Concurrent) are built.
-
-4. **syncqt dependency**: The `qt-resource/include/` directory requires syncqt-generated
+3. **syncqt dependency**: The `qt-resource/include/` directory requires syncqt-generated
    forwarding headers from an existing Qt installation (MinGW build).
+
+4. **UIC pre-generated**: `ui_qfiledialog.h` is pre-generated (stored in `generated/uic/`).
+   A future step could build `uic.exe` and generate it at build time.
 
 ## Future Work
 
@@ -225,10 +243,11 @@ zig build -Doptimize=ReleaseFast
 - [x] Build QtConcurrent module (thread pool, parallel execution)
 - [x] Build platform plugins (qwindows for Windows)
 - [x] Build harfbuzz, freetype, libpng, libjpeg as 3rd party dependencies
+- [x] Generate MOC outputs at build time (moc.exe runs during build)
+- [ ] Build UIC tool and generate ui_*.h at build time
 - [ ] Run syncqt from Zig build to generate forwarding headers
 - [ ] Add cross-compilation support (Linux, macOS targets)
 - [ ] Add build options for feature selection
-- [ ] Generate MOC outputs as part of the build process
 
 ## References
 

@@ -27,7 +27,7 @@ Build Qt 6.8.3 as static libraries using the Zig build system, replacing CMake/N
 
 - **Zig** 0.14.0+ (tested with 0.16.0-dev) - [ziglang.org](https://ziglang.org/download/)
 - **Qt 6.8.3 source** code (qtbase module)
-- An existing Qt CMake build (for syncqt-generated forwarding headers and pre-generated MOC outputs)
+- An existing Qt MinGW installation (for syncqt-generated forwarding headers)
 
 ## Project Structure
 
@@ -37,6 +37,7 @@ qt6-zig-build/
 ├── build.zig.zon             # Package manifest
 ├── source_lists.zig          # QtCore source file arrays
 ├── source_lists_extra.zig    # QtGui/Widgets/Network/etc source arrays
+├── moc_headers.zig           # MOC header/source lists per module
 ├── qt-resource/
 │   ├── qtbase/               # Junction → Qt 6.8.3 Src/qtbase
 │   ├── include/              # Junction → MinGW Qt include (syncqt headers)
@@ -48,11 +49,7 @@ qt6-zig-build/
 │   ├── QtGui/                # QtGui config headers
 │   ├── QtWidgets/            # QtWidgets config headers
 │   ├── QtNetwork/            # QtNetwork config headers
-│   ├── moc/                  # QtCore MOC outputs
-│   ├── moc_gui/              # QtGui MOC outputs
-│   ├── moc_widgets/          # QtWidgets MOC outputs
-│   ├── moc_network/          # QtNetwork MOC outputs
-│   ├── moc_qwindows/         # Platform plugin MOC outputs
+│   ├── uic/                  # Pre-generated UIC form headers
 │   ├── rcc/                  # RCC-generated resources
 │   └── moc_parser_patched.cpp # Clang compatibility patch
 ├── DEV_NOTES.md

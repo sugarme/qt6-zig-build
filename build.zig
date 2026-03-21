@@ -1,6 +1,7 @@
 const std = @import("std");
 const sources = @import("source_lists.zig");
 const extra = @import("source_lists_extra.zig");
+const moc_lists = @import("moc_headers.zig");
 
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
@@ -222,99 +223,7 @@ pub fn build(b: *std.Build) void {
     b.installArtifact(bootstrap_lib);
 
     // ========================================================================
-    // 5. Full QtCore (static library - with MOC outputs)
-    // ========================================================================
-
-    const qtcore_mod = b.createModule(.{
-        .target = target,
-        .optimize = optimize,
-        .link_libc = true,
-    });
-
-    qtcore_mod.linkSystemLibrary("c++", .{});
-    qtcore_mod.linkSystemLibrary("advapi32", .{});
-    qtcore_mod.linkSystemLibrary("authz", .{});
-    qtcore_mod.linkSystemLibrary("kernel32", .{});
-    qtcore_mod.linkSystemLibrary("netapi32", .{});
-    qtcore_mod.linkSystemLibrary("ole32", .{});
-    qtcore_mod.linkSystemLibrary("shell32", .{});
-    qtcore_mod.linkSystemLibrary("user32", .{});
-    qtcore_mod.linkSystemLibrary("uuid", .{});
-    qtcore_mod.linkSystemLibrary("version", .{});
-    qtcore_mod.linkSystemLibrary("winmm", .{});
-    qtcore_mod.linkSystemLibrary("ws2_32", .{});
-    qtcore_mod.linkSystemLibrary("mpr", .{});
-    qtcore_mod.linkSystemLibrary("userenv", .{});
-    qtcore_mod.linkSystemLibrary("api-ms-win-core-synch-l1-2-0", .{});
-
-    addQtCoreIncludes(qtcore_mod, b);
-    // MOC output directory (for #include "moc_xxx.cpp" in source files)
-    qtcore_mod.addIncludePath(b.path("generated/moc/include"));
-
-    // Full QtCore sources (common/cross-platform)
-    qtcore_mod.addCSourceFiles(.{
-        .root = b.path("qt-resource/qtbase/src/corelib"),
-        .files = sources.qtcore_common_sources,
-        .flags = qt_core_cxx_flags,
-    });
-
-    // QtCore Windows-specific sources
-    qtcore_mod.addCSourceFiles(.{
-        .root = b.path("qt-resource/qtbase/src/corelib"),
-        .files = sources.qtcore_win_sources,
-        .flags = qt_core_cxx_flags,
-    });
-
-    // double-conversion (embedded in QtCore)
-    qtcore_mod.addCSourceFiles(.{
-        .root = b.path("qt-resource/qtbase/src/3rdparty/double-conversion"),
-        .files = sources.double_conversion_sources,
-        .flags = &.{
-            "-std=c++17",
-            "-w",
-            "-D_CRT_SECURE_NO_WARNINGS",
-        },
-    });
-
-    // Embedded 3rd party hash algorithms
-    qtcore_mod.addCSourceFiles(.{
-        .root = b.path("qt-resource/qtbase/src/3rdparty"),
-        .files = sources.hash_3rdparty_sources,
-        .flags = common_c_flags ++ &[_][]const u8{
-            "-Wno-implicit-function-declaration",
-        },
-    });
-
-    // MOC standalone compilation (only moc_qnamespace - others are #include'd from source files)
-    qtcore_mod.addCSourceFiles(.{
-        .root = b.path("generated/moc"),
-        .files = &.{"moc_qnamespace.cpp"},
-        .flags = qt_core_cxx_flags,
-    });
-
-    // Generated MIME database
-    qtcore_mod.addCSourceFiles(.{
-        .root = b.path("generated"),
-        .files = &.{"qmimeprovider_database.cpp"},
-        .flags = qt_core_cxx_flags,
-    });
-
-    // Generated qconfig.cpp
-    qtcore_mod.addCSourceFiles(.{
-        .root = b.path("generated/QtCore"),
-        .files = &.{"qconfig.cpp"},
-        .flags = qt_core_cxx_flags,
-    });
-
-    const qtcore_lib = b.addLibrary(.{
-        .name = "Qt6Core",
-        .linkage = .static,
-        .root_module = qtcore_mod,
-    });
-    b.installArtifact(qtcore_lib);
-
-    // ========================================================================
-    // 6. MOC tool (executable - links Bootstrap)
+    // 5. MOC tool (executable - links Bootstrap)
     // ========================================================================
 
     const moc_mod = b.createModule(.{
@@ -388,6 +297,126 @@ pub fn build(b: *std.Build) void {
         .root_module = moc_mod,
     });
     b.installArtifact(moc_exe);
+
+    // ========================================================================
+    // 6. Generate MOC outputs for QtCore
+    // ========================================================================
+
+    const qtcore_moc_includes: []const std.Build.LazyPath = &.{
+        b.path("generated/QtCore"),
+        b.path("generated/QtCore/private"),
+        b.path("qt-resource/include"),
+        b.path("qt-resource/include/QtCore"),
+        b.path("qt-resource/include/QtCore/6.8.3"),
+        b.path("qt-resource/include/QtCore/6.8.3/QtCore"),
+        b.path("qt-resource/include/QtCore/6.8.3/QtCore/private"),
+        b.path("qt-resource/qtbase/src/corelib/global"),
+        b.path("qt-resource/qtbase/src/corelib/kernel"),
+        b.path("qt-resource/qtbase/src/corelib/io"),
+        b.path("qt-resource/qtbase/src/corelib/thread"),
+        b.path("qt-resource/qtbase/mkspecs/win32-g++"),
+    };
+
+    const qtcore_moc = generateMocOutputs(
+        b,
+        moc_exe,
+        b.path("qt-resource/qtbase/src/corelib"),
+        moc_lists.qtcore_moc_headers,
+        moc_lists.qtcore_moc_sources,
+        moc_lists.qtcore_moc_standalone,
+        &.{},
+        qtcore_moc_includes,
+    );
+
+    // ========================================================================
+    // 7. Full QtCore (static library - with MOC outputs)
+    // ========================================================================
+
+    const qtcore_mod = b.createModule(.{
+        .target = target,
+        .optimize = optimize,
+        .link_libc = true,
+    });
+
+    qtcore_mod.linkSystemLibrary("c++", .{});
+    qtcore_mod.linkSystemLibrary("advapi32", .{});
+    qtcore_mod.linkSystemLibrary("authz", .{});
+    qtcore_mod.linkSystemLibrary("kernel32", .{});
+    qtcore_mod.linkSystemLibrary("netapi32", .{});
+    qtcore_mod.linkSystemLibrary("ole32", .{});
+    qtcore_mod.linkSystemLibrary("shell32", .{});
+    qtcore_mod.linkSystemLibrary("user32", .{});
+    qtcore_mod.linkSystemLibrary("uuid", .{});
+    qtcore_mod.linkSystemLibrary("version", .{});
+    qtcore_mod.linkSystemLibrary("winmm", .{});
+    qtcore_mod.linkSystemLibrary("ws2_32", .{});
+    qtcore_mod.linkSystemLibrary("mpr", .{});
+    qtcore_mod.linkSystemLibrary("userenv", .{});
+    qtcore_mod.linkSystemLibrary("api-ms-win-core-synch-l1-2-0", .{});
+
+    addQtCoreIncludes(qtcore_mod, b);
+    // Generated MOC output directory (for #include "moc_xxx.cpp" in source files)
+    qtcore_mod.addIncludePath(qtcore_moc.include_dir);
+
+    // Full QtCore sources (common/cross-platform)
+    qtcore_mod.addCSourceFiles(.{
+        .root = b.path("qt-resource/qtbase/src/corelib"),
+        .files = sources.qtcore_common_sources,
+        .flags = qt_core_cxx_flags,
+    });
+
+    // QtCore Windows-specific sources
+    qtcore_mod.addCSourceFiles(.{
+        .root = b.path("qt-resource/qtbase/src/corelib"),
+        .files = sources.qtcore_win_sources,
+        .flags = qt_core_cxx_flags,
+    });
+
+    // double-conversion (embedded in QtCore)
+    qtcore_mod.addCSourceFiles(.{
+        .root = b.path("qt-resource/qtbase/src/3rdparty/double-conversion"),
+        .files = sources.double_conversion_sources,
+        .flags = &.{
+            "-std=c++17",
+            "-w",
+            "-D_CRT_SECURE_NO_WARNINGS",
+        },
+    });
+
+    // Embedded 3rd party hash algorithms
+    qtcore_mod.addCSourceFiles(.{
+        .root = b.path("qt-resource/qtbase/src/3rdparty"),
+        .files = sources.hash_3rdparty_sources,
+        .flags = common_c_flags ++ &[_][]const u8{
+            "-Wno-implicit-function-declaration",
+        },
+    });
+
+    // MOC standalone compilation (only moc_qnamespace - others are #include'd from source files)
+    for (qtcore_moc.standalone_files) |moc_file| {
+        qtcore_mod.addCSourceFile(.{ .file = moc_file, .flags = qt_core_cxx_flags });
+    }
+
+    // Generated MIME database
+    qtcore_mod.addCSourceFiles(.{
+        .root = b.path("generated"),
+        .files = &.{"qmimeprovider_database.cpp"},
+        .flags = qt_core_cxx_flags,
+    });
+
+    // Generated qconfig.cpp
+    qtcore_mod.addCSourceFiles(.{
+        .root = b.path("generated/QtCore"),
+        .files = &.{"qconfig.cpp"},
+        .flags = qt_core_cxx_flags,
+    });
+
+    const qtcore_lib = b.addLibrary(.{
+        .name = "Qt6Core",
+        .linkage = .static,
+        .root_module = qtcore_mod,
+    });
+    b.installArtifact(qtcore_lib);
 
     // ========================================================================
     // 7. RCC tool (executable) - requires full QtCore, built after QtCore
@@ -545,9 +574,40 @@ pub fn build(b: *std.Build) void {
     qtgui_mod.linkSystemLibrary("uuid", .{});
     qtgui_mod.linkSystemLibrary("dwrite", .{});
 
+    // Generate MOC outputs for QtGui
+    const qtgui_moc_includes: []const std.Build.LazyPath = &.{
+        b.path("generated/QtCore"),
+        b.path("generated/QtCore/private"),
+        b.path("generated/QtGui"),
+        b.path("generated/QtGui/private"),
+        b.path("qt-resource/include"),
+        b.path("qt-resource/include/QtCore"),
+        b.path("qt-resource/include/QtCore/6.8.3"),
+        b.path("qt-resource/include/QtCore/6.8.3/QtCore"),
+        b.path("qt-resource/include/QtCore/6.8.3/QtCore/private"),
+        b.path("qt-resource/include/QtGui"),
+        b.path("qt-resource/include/QtGui/6.8.3"),
+        b.path("qt-resource/include/QtGui/6.8.3/QtGui"),
+        b.path("qt-resource/include/QtGui/6.8.3/QtGui/private"),
+        b.path("qt-resource/qtbase/src/gui/kernel"),
+        b.path("qt-resource/qtbase/src/gui/painting"),
+        b.path("qt-resource/qtbase/src/gui/text"),
+        b.path("qt-resource/qtbase/src/gui/image"),
+        b.path("qt-resource/qtbase/mkspecs/win32-g++"),
+    };
+    const qtgui_moc = generateMocOutputs(
+        b, moc_exe,
+        b.path("qt-resource/qtbase/src/gui"),
+        moc_lists.qtgui_moc_headers,
+        moc_lists.qtgui_moc_sources,
+        &.{},
+        moc_lists.qtgui_moc_empty,
+        qtgui_moc_includes,
+    );
+
     addQtCoreIncludes(qtgui_mod, b);
     addQtGuiIncludes(qtgui_mod, b);
-    qtgui_mod.addIncludePath(b.path("generated/moc_gui/include"));
+    qtgui_mod.addIncludePath(qtgui_moc.include_dir);
 
     // QtGui common sources
     qtgui_mod.addCSourceFiles(.{ .root = b.path("qt-resource/qtbase/src/gui"), .files = extra.qtgui_common_sources, .flags = qt_gui_cxx_flags });
@@ -598,10 +658,46 @@ pub fn build(b: *std.Build) void {
     qtwidgets_mod.linkSystemLibrary("gdi32", .{});
     qtwidgets_mod.linkSystemLibrary("uuid", .{});
 
+    // Generate MOC outputs for QtWidgets
+    const qtwidgets_moc_includes: []const std.Build.LazyPath = &.{
+        b.path("generated/QtCore"),
+        b.path("generated/QtCore/private"),
+        b.path("generated/QtGui"),
+        b.path("generated/QtWidgets"),
+        b.path("generated/QtWidgets/private"),
+        b.path("qt-resource/include"),
+        b.path("qt-resource/include/QtCore"),
+        b.path("qt-resource/include/QtCore/6.8.3"),
+        b.path("qt-resource/include/QtCore/6.8.3/QtCore"),
+        b.path("qt-resource/include/QtCore/6.8.3/QtCore/private"),
+        b.path("qt-resource/include/QtGui"),
+        b.path("qt-resource/include/QtGui/6.8.3"),
+        b.path("qt-resource/include/QtGui/6.8.3/QtGui"),
+        b.path("qt-resource/include/QtGui/6.8.3/QtGui/private"),
+        b.path("qt-resource/include/QtWidgets"),
+        b.path("qt-resource/include/QtWidgets/6.8.3"),
+        b.path("qt-resource/include/QtWidgets/6.8.3/QtWidgets"),
+        b.path("qt-resource/include/QtWidgets/6.8.3/QtWidgets/private"),
+        b.path("qt-resource/qtbase/src/widgets/kernel"),
+        b.path("qt-resource/qtbase/src/widgets/widgets"),
+        b.path("qt-resource/qtbase/src/widgets/dialogs"),
+        b.path("qt-resource/qtbase/mkspecs/win32-g++"),
+    };
+    const qtwidgets_moc = generateMocOutputs(
+        b, moc_exe,
+        b.path("qt-resource/qtbase/src/widgets"),
+        moc_lists.qtwidgets_moc_headers,
+        moc_lists.qtwidgets_moc_sources,
+        &.{},
+        &.{},
+        qtwidgets_moc_includes,
+    );
+
     addQtCoreIncludes(qtwidgets_mod, b);
     addQtGuiIncludes(qtwidgets_mod, b);
     addQtWidgetsIncludes(qtwidgets_mod, b);
-    qtwidgets_mod.addIncludePath(b.path("generated/moc_widgets/include"));
+    qtwidgets_mod.addIncludePath(qtwidgets_moc.include_dir);
+    qtwidgets_mod.addIncludePath(b.path("generated/uic"));
 
     qtwidgets_mod.addCSourceFiles(.{ .root = b.path("qt-resource/qtbase/src/widgets"), .files = extra.qtwidgets_common_sources, .flags = qt_widgets_cxx_flags });
     qtwidgets_mod.addCSourceFiles(.{ .root = b.path("qt-resource/qtbase/src/widgets"), .files = extra.qtwidgets_win_sources, .flags = qt_widgets_cxx_flags });
@@ -639,9 +735,40 @@ pub fn build(b: *std.Build) void {
     qtnetwork_mod.linkSystemLibrary("user32", .{});
     qtnetwork_mod.linkSystemLibrary("uuid", .{});
 
+    // Generate MOC outputs for QtNetwork
+    const qtnetwork_moc_includes: []const std.Build.LazyPath = &.{
+        b.path("generated/QtCore"),
+        b.path("generated/QtCore/private"),
+        b.path("generated/QtNetwork"),
+        b.path("generated/QtNetwork/private"),
+        b.path("qt-resource/include"),
+        b.path("qt-resource/include/QtCore"),
+        b.path("qt-resource/include/QtCore/6.8.3"),
+        b.path("qt-resource/include/QtCore/6.8.3/QtCore"),
+        b.path("qt-resource/include/QtCore/6.8.3/QtCore/private"),
+        b.path("qt-resource/include/QtNetwork"),
+        b.path("qt-resource/include/QtNetwork/6.8.3"),
+        b.path("qt-resource/include/QtNetwork/6.8.3/QtNetwork"),
+        b.path("qt-resource/include/QtNetwork/6.8.3/QtNetwork/private"),
+        b.path("qt-resource/qtbase/src/network/kernel"),
+        b.path("qt-resource/qtbase/src/network/access"),
+        b.path("qt-resource/qtbase/src/network/socket"),
+        b.path("qt-resource/qtbase/src/network/ssl"),
+        b.path("qt-resource/qtbase/mkspecs/win32-g++"),
+    };
+    const qtnetwork_moc = generateMocOutputs(
+        b, moc_exe,
+        b.path("qt-resource/qtbase/src/network"),
+        moc_lists.qtnetwork_moc_headers,
+        moc_lists.qtnetwork_moc_sources,
+        &.{},
+        &.{},
+        qtnetwork_moc_includes,
+    );
+
     addQtCoreIncludes(qtnetwork_mod, b);
     addQtNetworkIncludes(qtnetwork_mod, b);
-    qtnetwork_mod.addIncludePath(b.path("generated/moc_network/include"));
+    qtnetwork_mod.addIncludePath(qtnetwork_moc.include_dir);
 
     qtnetwork_mod.addCSourceFiles(.{ .root = b.path("qt-resource/qtbase/src/network"), .files = extra.qtnetwork_common_sources, .flags = qt_network_cxx_flags });
     qtnetwork_mod.addCSourceFiles(.{ .root = b.path("qt-resource/qtbase/src/network"), .files = extra.qtnetwork_win_sources, .flags = qt_network_cxx_flags });
@@ -704,35 +831,151 @@ pub fn build(b: *std.Build) void {
     qwindows_mod.linkSystemLibrary("uuid", .{});
     qwindows_mod.linkSystemLibrary("uxtheme", .{});
 
+    // Generate MOC outputs for qwindows plugin
+    const qwindows_moc_includes: []const std.Build.LazyPath = &.{
+        b.path("generated/QtCore"),
+        b.path("generated/QtCore/private"),
+        b.path("generated/QtGui"),
+        b.path("qt-resource/include"),
+        b.path("qt-resource/include/QtCore"),
+        b.path("qt-resource/include/QtCore/6.8.3"),
+        b.path("qt-resource/include/QtCore/6.8.3/QtCore"),
+        b.path("qt-resource/include/QtCore/6.8.3/QtCore/private"),
+        b.path("qt-resource/include/QtGui"),
+        b.path("qt-resource/include/QtGui/6.8.3"),
+        b.path("qt-resource/include/QtGui/6.8.3/QtGui"),
+        b.path("qt-resource/include/QtGui/6.8.3/QtGui/private"),
+        b.path("qt-resource/qtbase/src/plugins/platforms/windows"),
+        b.path("qt-resource/qtbase/src/plugins/platforms/windows/uiautomation"),
+        b.path("qt-resource/qtbase/mkspecs/win32-g++"),
+    };
+    const qwindows_moc = generateMocOutputs(
+        b, moc_exe,
+        b.path("qt-resource/qtbase/src/plugins/platforms/windows"),
+        &.{}, // no regular headers (all standalone for qwindows)
+        moc_lists.qwindows_moc_sources,
+        moc_lists.qwindows_moc_standalone,
+        &.{},
+        qwindows_moc_includes,
+    );
+
     addQtCoreIncludes(qwindows_mod, b);
     addQtGuiIncludes(qwindows_mod, b);
     qwindows_mod.addIncludePath(b.path("qt-resource/qtbase/src/plugins/platforms/windows"));
     qwindows_mod.addIncludePath(b.path("qt-resource/qtbase/src/plugins/platforms/windows/uiautomation"));
     qwindows_mod.addIncludePath(b.path("qt-resource/qtbase/src/3rdparty/wintab"));
-    qwindows_mod.addIncludePath(b.path("generated/moc_qwindows/include"));
+    qwindows_mod.addIncludePath(qwindows_moc.include_dir);
 
     qwindows_mod.addCSourceFiles(.{ .root = b.path("qt-resource/qtbase/src/plugins/platforms/windows"), .files = extra.qwindows_plugin_sources, .flags = qwindows_cxx_flags });
 
-    // Compile moc-generated files for qwindows plugin
-    // The moc files use relative paths like ../../../../../../../qtbase/src/...
-    // which resolve from generated/moc_qwindows/include/ back to the source tree
-    qwindows_mod.addIncludePath(b.path("qt-resource"));
-    qwindows_mod.addCSourceFiles(.{
-        .root = b.path("generated/moc_qwindows/include"),
-        .files = &.{
-            "moc_qwindowsgdinativeinterface.cpp",
-            "moc_qwindowsinputcontext.cpp",
-            "moc_qwindowsmenu.cpp",
-            "moc_qwindowsnativeinterface.cpp",
-            "moc_qwindowsuiabaseprovider.cpp",
-            "moc_qwindowsuiamainprovider.cpp",
-            "moc_qwindowsuiaprovidercache.cpp",
-        },
-        .flags = qwindows_cxx_flags,
-    });
+    // Compile standalone moc-generated files for qwindows plugin
+    for (qwindows_moc.standalone_files) |moc_file| {
+        qwindows_mod.addCSourceFile(.{ .file = moc_file, .flags = qwindows_cxx_flags });
+    }
 
     const qwindows_lib = b.addLibrary(.{ .name = "qwindows", .linkage = .static, .root_module = qwindows_mod });
     b.installArtifact(qwindows_lib);
+}
+
+// ============================================================================
+// Helper: Generate MOC outputs by running moc.exe on headers
+// ============================================================================
+
+const MocOutput = struct {
+    /// Directory containing all generated moc_*.cpp and *.moc files.
+    /// Add this as an include path for the module.
+    include_dir: std.Build.LazyPath,
+    /// Standalone moc_*.cpp files that need compilation as separate TUs.
+    standalone_files: []const std.Build.LazyPath,
+};
+
+fn generateMocOutputs(
+    b: *std.Build,
+    moc_exe_compile: *std.Build.Step.Compile,
+    source_root: std.Build.LazyPath,
+    moc_headers: []const []const u8,
+    moc_sources: []const []const u8,
+    standalone_headers: []const []const u8,
+    empty_stubs: []const []const u8,
+    moc_include_paths: []const std.Build.LazyPath,
+) MocOutput {
+    const wf = b.addWriteFiles();
+    var standalone_list: std.ArrayListUnmanaged(std.Build.LazyPath) = .{};
+
+    // Platform defines so Qt headers derive Q_OS_WIN correctly
+    const platform_defines: []const []const u8 = &.{
+        "-DWIN32", "-D_WIN32", "-DWIN64", "-D_WIN64",
+        "-DUNICODE", "-D_UNICODE", "-DNOMINMAX",
+        "-DQT_STATIC", "-DQT_NO_DEBUG",
+    };
+
+    // Process regular headers -> moc_*.cpp (will be #include'd by source files)
+    for (moc_headers) |header_rel_path| {
+        const stem = std.fs.path.stem(header_rel_path);
+        const output_name = b.fmt("moc_{s}.cpp", .{stem});
+
+        const run = b.addRunArtifact(moc_exe_compile);
+        run.addArg("-i"); // suppress #include in output (source files already include the header)
+        for (platform_defines) |def| {
+            run.addArg(def);
+        }
+        for (moc_include_paths) |inc_path| {
+            run.addPrefixedDirectoryArg("-I", inc_path);
+        }
+        run.addFileArg(source_root.path(b, header_rel_path));
+        run.addArg("-o");
+        const output = run.addOutputFileArg(output_name);
+        _ = wf.addCopyFile(output, output_name);
+    }
+
+    // Process .cpp sources -> *.moc files (included within the source files)
+    for (moc_sources) |source_rel_path| {
+        const stem = std.fs.path.stem(source_rel_path);
+        const output_name = b.fmt("{s}.moc", .{stem});
+
+        const run = b.addRunArtifact(moc_exe_compile);
+        run.addArg("-i");
+        for (platform_defines) |def| {
+            run.addArg(def);
+        }
+        for (moc_include_paths) |inc_path| {
+            run.addPrefixedDirectoryArg("-I", inc_path);
+        }
+        run.addFileArg(source_root.path(b, source_rel_path));
+        run.addArg("-o");
+        const output = run.addOutputFileArg(output_name);
+        _ = wf.addCopyFile(output, output_name);
+    }
+
+    // Process standalone headers -> moc_*.cpp (compiled as separate TUs, need #include)
+    for (standalone_headers) |header_rel_path| {
+        const stem = std.fs.path.stem(header_rel_path);
+        const output_name = b.fmt("moc_{s}.cpp", .{stem});
+
+        const run = b.addRunArtifact(moc_exe_compile);
+        // No -i flag: standalone files need #include to compile independently
+        for (platform_defines) |def| {
+            run.addArg(def);
+        }
+        for (moc_include_paths) |inc_path| {
+            run.addPrefixedDirectoryArg("-I", inc_path);
+        }
+        run.addFileArg(source_root.path(b, header_rel_path));
+        run.addArg("-o");
+        const output = run.addOutputFileArg(output_name);
+        _ = wf.addCopyFile(output, output_name);
+        standalone_list.append(b.allocator, output) catch @panic("OOM");
+    }
+
+    // Create empty stub files (e.g., moc_qopenglcontext.cpp when OpenGL is disabled)
+    for (empty_stubs) |stub_name| {
+        _ = wf.add(stub_name, "");
+    }
+
+    return .{
+        .include_dir = wf.getDirectory(),
+        .standalone_files = standalone_list.toOwnedSlice(b.allocator) catch @panic("OOM"),
+    };
 }
 
 // ============================================================================
