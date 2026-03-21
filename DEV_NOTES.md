@@ -66,12 +66,16 @@ qt6-zig-build/
 ├── source_lists_extra.zig # QtGui/Widgets/Network/etc source arrays
 ├── moc_headers.zig        # MOC header/source lists per module
 ├── DEV_NOTES.md           # This file
-├── qt-resource/
-│   ├── qtbase/            # Junction → Qt 6.8.3 Src/qtbase
-│   ├── include/           # Junction → MinGW Qt include (syncqt headers)
-│   ├── lib/               # Junction → MinGW Qt lib
-│   ├── mkspecs/           # Junction → MinGW Qt mkspecs
-│   └── plugins/           # Junction → MinGW Qt plugins
+├── Qt/6.8.3/              # Bundled Qt 6.8.3 source (self-contained)
+│   ├── include/           # syncqt-generated forwarding headers
+│   │   ├── QtCore/
+│   │   ├── QtGui/
+│   │   ├── QtWidgets/
+│   │   ├── QtNetwork/
+│   │   └── QtConcurrent/
+│   └── qtbase/
+│       ├── src/           # Qt source code (corelib, gui, widgets, etc.)
+│       └── mkspecs/       # Platform specifications (win32-g++)
 ├── generated/
 │   ├── QtCore/
 │   │   ├── qconfig.h              # Static build configuration
@@ -229,8 +233,8 @@ zig build -Doptimize=ReleaseFast
 
 2. **No QML/Qt Quick**: Only the C++ modules (Core, Gui, Widgets, Network, Concurrent) are built.
 
-3. **syncqt dependency**: The `qt-resource/include/` directory requires syncqt-generated
-   forwarding headers from an existing Qt installation (MinGW build).
+3. **syncqt headers**: The `Qt/6.8.3/include/` directory contains pre-generated syncqt
+   forwarding headers bundled in the repository.
 
 4. **UIC pre-generated**: `ui_qfiledialog.h` is pre-generated (stored in `generated/uic/`).
    A future step could build `uic.exe` and generate it at build time.

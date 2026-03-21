@@ -26,8 +26,8 @@ Build Qt 6.8.3 as static libraries using the Zig build system, replacing CMake/N
 ## Prerequisites
 
 - **Zig** 0.14.0+ (tested with 0.16.0-dev) - [ziglang.org](https://ziglang.org/download/)
-- **Qt 6.8.3 source** code (qtbase module)
-- An existing Qt MinGW installation (for syncqt-generated forwarding headers)
+
+No external Qt installation is required. All necessary Qt 6.8.3 source code and headers are bundled in the repository under `Qt/6.8.3/`.
 
 ## Project Structure
 
@@ -38,12 +38,16 @@ qt6-zig-build/
 ├── source_lists.zig          # QtCore source file arrays
 ├── source_lists_extra.zig    # QtGui/Widgets/Network/etc source arrays
 ├── moc_headers.zig           # MOC header/source lists per module
-├── qt-resource/
-│   ├── qtbase/               # Junction → Qt 6.8.3 Src/qtbase
-│   ├── include/              # Junction → MinGW Qt include (syncqt headers)
-│   ├── lib/                  # Junction → MinGW Qt lib
-│   ├── mkspecs/              # Junction → MinGW Qt mkspecs
-│   └── plugins/              # Junction → MinGW Qt plugins
+├── Qt/6.8.3/                 # Bundled Qt 6.8.3 source (self-contained)
+│   ├── include/              # syncqt-generated forwarding headers
+│   │   ├── QtCore/
+│   │   ├── QtGui/
+│   │   ├── QtWidgets/
+│   │   ├── QtNetwork/
+│   │   └── QtConcurrent/
+│   └── qtbase/
+│       ├── src/              # Qt source code (corelib, gui, widgets, etc.)
+│       └── mkspecs/          # Platform specifications (win32-g++)
 ├── generated/
 │   ├── QtCore/               # Config headers (qconfig.h, etc.)
 │   ├── QtGui/                # QtGui config headers
@@ -64,27 +68,7 @@ git clone https://github.com/sugarme/qt6-zig-build.git
 cd qt6-zig-build
 ```
 
-2. Set up `qt-resource/` directory with junctions to your Qt installation and source:
-```bash
-# Create resource directory
-mkdir qt-resource
-
-# Windows: Create directory junctions (requires Qt 6.8.3 installed with MinGW and Sources)
-mklink /J qt-resource\qtbase C:\Qt\6.8.3\Src\qtbase
-mklink /J qt-resource\include C:\Qt\6.8.3\mingw_64\include
-mklink /J qt-resource\lib C:\Qt\6.8.3\mingw_64\lib
-mklink /J qt-resource\mkspecs C:\Qt\6.8.3\mingw_64\mkspecs
-mklink /J qt-resource\plugins C:\Qt\6.8.3\mingw_64\plugins
-
-# Linux/macOS: Use symlinks instead
-# ln -s /path/to/Qt/6.8.3/Src/qtbase qt-resource/qtbase
-# ln -s /path/to/Qt/6.8.3/gcc_64/include qt-resource/include
-# ... etc.
-```
-
-The `qtbase` junction points to the Qt 6.8.3 source code.
-The `include` junction points to the syncqt-generated forwarding headers from the Qt installation.
-The `lib`, `mkspecs`, and `plugins` junctions point to the pre-built MinGW Qt (used for reference headers).
+No additional setup is needed — the Qt source code is bundled in the repository.
 
 ## Build Commands
 
