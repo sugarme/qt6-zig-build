@@ -4,38 +4,38 @@ Build Qt 6.8.3 as static libraries using the Zig build system, replacing CMake/N
 
 ## What's Built
 
-| Library | Description |
-|---------|-------------|
-| **Qt Modules** | |
-| `Qt6Core.lib` | Core non-GUI functionality |
-| `Qt6Gui.lib` | GUI foundation (painting, fonts, images, RHI) |
-| `Qt6Widgets.lib` | Desktop widgets (buttons, dialogs, views) |
-| `Qt6Network.lib` | Networking (HTTP, sockets, SSL base) |
-| `Qt6Concurrent.lib` | Thread pool and parallel execution |
-| `Qt6Xml.lib` | XML DOM parser |
-| `Qt6Sql.lib` | SQL database abstraction + models |
-| `Qt6OpenGL.lib` | OpenGL wrappers and paint engine |
-| `Qt6PrintSupport.lib` | Printing, print dialogs, print preview |
-| `Qt6Svg.lib` | SVG rendering |
-| `Qt6SvgWidgets.lib` | SVG widget integration |
-| `Qt6WebChannel.lib` | WebChannel for Qt/web bridge |
-| `Qt6Charts.lib` | Charts (line, bar, pie, scatter, etc.) |
-| `Qt6Multimedia.lib` | Audio/video playback, capture, devices |
-| `Qt6SpatialAudio.lib` | 3D spatial audio (Resonance Audio) |
-| **Platform** | |
-| `qwindows.lib` | Windows platform plugin (static) |
-| **3rd Party** | |
-| `qtHarfbuzz.lib` | Text shaping engine |
-| `qtFreetype.lib` | Font rendering |
-| `qtLibpng.lib` | PNG codec |
-| `qtLibjpeg.lib` | JPEG codec |
-| `qtZlib.lib` | Compression |
-| `qtPcre2.lib` | Regular expressions |
-| `qtDoubleConversion.lib` | Float/string conversion |
-| `qtBootstrap.lib` | Minimal QtCore for tools |
-| **Tools** | |
-| `moc.exe` | Qt Meta Object Compiler |
-| `rcc.exe` | Qt Resource Compiler |
+| Library | Description | Debug Size |
+|---------|-------------|------------|
+| **Qt Modules** | | |
+| `Qt6Core.lib` | Core non-GUI functionality | 197 MB |
+| `Qt6Gui.lib` | GUI foundation (painting, fonts, images, RHI) | 258 MB |
+| `Qt6Widgets.lib` | Desktop widgets (buttons, dialogs, views) | 246 MB |
+| `Qt6Network.lib` | Networking (HTTP, sockets, SSL base) | 89 MB |
+| `Qt6Concurrent.lib` | Thread pool and parallel execution | 263 KB |
+| `Qt6Xml.lib` | XML DOM parser | 3.1 MB |
+| `Qt6Sql.lib` | SQL database abstraction + models | 12.2 MB |
+| `Qt6OpenGL.lib` | OpenGL wrappers and paint engine | 17.4 MB |
+| `Qt6PrintSupport.lib` | Printing, print dialogs, print preview | 14.2 MB |
+| `Qt6Svg.lib` | SVG rendering | 14.2 MB |
+| `Qt6SvgWidgets.lib` | SVG widget integration | 1.0 MB |
+| `Qt6WebChannel.lib` | WebChannel for Qt/web bridge | 7.7 MB |
+| `Qt6Charts.lib` | Charts (line, bar, pie, scatter, etc.) | 97.3 MB |
+| `Qt6Multimedia.lib` | Audio/video playback, capture, devices | 49.5 MB |
+| `Qt6SpatialAudio.lib` | 3D spatial audio (Resonance Audio) | 64.6 MB |
+| **Platform** | | |
+| `qwindows.lib` | Windows platform plugin (static) | 35.6 MB |
+| **3rd Party** | | |
+| `qtHarfbuzz.lib` | Text shaping engine | 133 MB |
+| `qtFreetype.lib` | Font rendering | 14.0 MB |
+| `qtLibpng.lib` | PNG codec | 3.2 MB |
+| `qtLibjpeg.lib` | JPEG codec | 9.3 MB |
+| `qtZlib.lib` | Compression | 1.7 MB |
+| `qtPcre2.lib` | Regular expressions | 4.2 MB |
+| `qtDoubleConversion.lib` | Float/string conversion | 863 KB |
+| `qtBootstrap.lib` | Minimal QtCore for tools | 57.2 MB |
+| **Tools** | | |
+| `moc.exe` | Qt Meta Object Compiler | 13.4 MB |
+| `rcc.exe` | Qt Resource Compiler | 31.5 MB |
 
 ## Prerequisites
 
