@@ -7,7 +7,9 @@ const charts = @import("source_lists_charts.zig");
 const multimedia = @import("source_lists_multimedia.zig");
 
 pub fn build(b: *std.Build) void {
-    const target = b.standardTargetOptions(.{});
+    const target = b.standardTargetOptions(.{
+        .default_target = .{ .cpu_model = .{ .explicit = &std.Target.x86.cpu.x86_64_v3 } },
+    });
     const optimize = b.standardOptimizeOption(.{});
 
     // ========================================================================
